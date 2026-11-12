@@ -1,16 +1,15 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { themeConfig } from '@/theme';
 
 //ab.
 
 const LoginScreen = () => {
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} />
-    </ThemedView>
+    </View>
   );
 };
 
@@ -24,10 +23,10 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: themeConfig.spacing[6],
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+    gap: themeConfig.spacing[4],
+    paddingBottom: (Platform.select({ ios: 50, android: 80 }) ?? 0) + themeConfig.spacing[4],
+    maxWidth: 800,
   },
 });

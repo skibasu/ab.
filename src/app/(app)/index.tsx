@@ -1,5 +1,6 @@
-import { ThemedView } from '@/components/themed-view';
+import HomeScreen from '@/components/screens/protected/HomeScreen/HomeScreen';
 
-export default function HomeScreen() {
-  return <ThemedView style={{ flex: 1 }} />;
-}
+const Home = () => {
+  return <HomeScreen />;
+};
+export default Home;

@@ -1,7 +1,6 @@
 import { Stack } from 'expo-router';
 
-import ThemedHeader from '@/components/themed-header';
-import { ThemedText } from '@/components/themed-text';
+import Header from '@/components/global/Header/Header';
 
 export default function AppLayout() {
   return (
@@ -11,14 +10,9 @@ export default function AppLayout() {
         options={{
           title: 'Library',
           header: () => (
-            <ThemedHeader
-              left={<ThemedText>Library</ThemedText>}
-              right={
-                <>
-                  <ThemedText>a</ThemedText>
-                  <ThemedText>b</ThemedText>
-                </>
-              }
+            <Header
+              title="Library"
+              iconList={['search', 'settings']}
             />
           ),
           headerTransparent: false,
@@ -28,15 +22,11 @@ export default function AppLayout() {
         name="playing"
         options={{
           headerShown: false,
+          headerTransparent: false,
           header: () => (
-            <ThemedHeader
-              left={<ThemedText>Playing</ThemedText>}
-              right={
-                <>
-                  <ThemedText>a</ThemedText>
-                  <ThemedText>b</ThemedText>
-                </>
-              }
+            <Header
+              title="Now Playing"
+              iconList={['settings']}
             />
           ),
         }}
