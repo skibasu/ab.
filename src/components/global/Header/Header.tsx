@@ -28,6 +28,7 @@ const Header = ({ title, iconList }: AbHeaderProps) => {
                 key={icon}
                 icon={icon}
                 label={icon}
+                onPress={() => console.log('pressed')}
               />
             ))}
           </View>

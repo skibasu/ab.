@@ -21,12 +21,21 @@ export default function AppLayout() {
       <Stack.Screen
         name="playing"
         options={{
-          headerShown: false,
-          headerTransparent: false,
           header: () => (
             <Header
               title="Now Playing"
               iconList={['settings']}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name="search"
+        options={{
+          header: () => (
+            <Header
+              title="Search"
+              iconList={['close']}
             />
           ),
         }}

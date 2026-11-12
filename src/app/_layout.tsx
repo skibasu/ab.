@@ -1,8 +1,24 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { fontFamilies } from '@/theme/fonts';
+import { useFonts } from 'expo-font';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+void SplashScreen.preventAutoHideAsync().catch(console.error);
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts(fontFamilies);
   const theme = useAppTheme();
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) SplashScreen.hide();
+    if (fontError) throw fontError;
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded) return null;
+
   const navigationBase = theme.dark ? DarkTheme : DefaultTheme;
   const navigationTheme = {
     ...navigationBase,
@@ -20,20 +36,22 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={navigationTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Protected
-          guard={!isAuthenticated}
-          redirectTo="/"
-        >
-          <Stack.Screen name="(auth)" />
-        </Stack.Protected>
-        <Stack.Protected
-          guard={isAuthenticated}
-          redirectTo="/login"
-        >
-          <Stack.Screen name="(app)" />
-        </Stack.Protected>
-      </Stack>
+      <SafeAreaProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Protected
+            guard={!isAuthenticated}
+            redirectTo="/"
+          >
+            <Stack.Screen name="(auth)" />
+          </Stack.Protected>
+          <Stack.Protected
+            guard={isAuthenticated}
+            redirectTo="/login"
+          >
+            <Stack.Screen name="(app)" />
+          </Stack.Protected>
+        </Stack>
+      </SafeAreaProvider>
     </ThemeProvider>
   );
 }

@@ -9,6 +9,7 @@ Tailwind uses one color palette and expresses purpose through utilities such as 
 - `colors.ts`: the only definitions of the shared palette's color values.
 - `config.ts`: `themeConfig`, with colors, numeric spacing, border radius, font family, font weight, font size, line height and dimensions. `textStyles` composes those primitives into reusable native Text styles.
 - `theme.ts`: Light/Dark role assignments. Each value refers directly to `colors`, without an intermediate Figma-shaped object.
+- `fonts.ts`: bundled Inter Medium (500), SemiBold (600) and Bold (700), registered as one family by the root layout.
 - `index.ts`: public exports. Import configuration and types from `@/theme`; components get the active theme through `useAppTheme()`.
 
 ## Palette versus purpose
@@ -82,7 +83,7 @@ Change a shared shade in `colors.ts` to update every referencing role. Change it
 ## Text and dimensions
 
 - `textStyles` references the font-family/size/weight configuration instead of repeating numeric values. The 11 existing text roles preserve their metrics; names such as `playerTitle`, `caption`, `button` and `input` describe intended use.
-- Inter must be registered before applying the new text styles. Existing components retain their system fonts. Native font scaling remains enabled.
+- The root layout loads Inter 500, 600 and 700 through `expo-font` before rendering routes. The font files ship with the app and need no network connection at runtime. The splash screen hides after loading or on a loading error; an error is surfaced instead of leaving the splash visible. Text using `fontFamily.sans` or `textStyles` uses Inter; other text retains its existing font. Native font scaling remains enabled.
 - Omitted line height uses the font's native metrics. The input text style explicitly uses `lineHeight[6]` (24).
 - `width.iconButton` and `height.iconButton` are 42; `width.touchTarget` and `height.touchTarget` are 44. `minHeight.button` and `.input` are 55. `maxWidth.buttonLabel` is 224; `maxWidth.content` is 342.
 - `backgroundGradient.screen` contains colors and normalized start/end coordinates. It has no Figma matrix or logo gradient. Logo gradients belong to the imported SVG. A descriptor alone does not paint a component.
