@@ -25,6 +25,7 @@ const modeConfig = {
       onSecondary: colors.gray[800],
       onAccent: colors.gray[800],
       disabled: colors.gray[500],
+      error: colors.red[700],
     },
     borderColor: {
       default: colors.violet[300],
@@ -66,6 +67,7 @@ const modeConfig = {
       onSecondary: colors.gray[900],
       onAccent: colors.gray[900],
       disabled: colors.gray[300],
+      error: colors.red[400],
     },
     borderColor: {
       default: colors.gray[600],
