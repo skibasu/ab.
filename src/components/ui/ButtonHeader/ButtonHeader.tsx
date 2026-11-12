@@ -39,25 +39,3 @@ const ButtonHeader = ({ label, icon, onPress }: ButtonHeaderProps) => {
   );
 };
 export default ButtonHeader;
-
-// const styles = StyleSheet.create({
-//   title: {
-//     flex: 1,
-//     fontSize: 28,
-//     fontWeight: '700',
-//   },
-
-//   touchTarget: {
-//     width: touchTarget,
-//     height: touchTarget,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-//   button: {
-//     width: 42,
-//     height: 42,
-//     borderRadius: 14,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-// });
