@@ -1,22 +1,25 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
-SplashScreen.preventAutoHideAsync();
-
-export default function TabLayout() {
+export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const isAuthenticated = false; // Replace with your authentication logic
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen
-          name="index"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="playing"
-          options={{ headerShown: false }}
-        />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Protected
+          guard={!isAuthenticated}
+          redirectTo="/"
+        >
+          <Stack.Screen name="(auth)" />
+        </Stack.Protected>
+        <Stack.Protected
+          guard={isAuthenticated}
+          redirectTo="/login"
+        >
+          <Stack.Screen name="(app)" />
+        </Stack.Protected>
       </Stack>
     </ThemeProvider>
   );

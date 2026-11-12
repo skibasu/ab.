@@ -1,21 +1,20 @@
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedView } from '@/components/themed-view';
-
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 
 //ab.
 
-export default function HomeScreen() {
+const LoginScreen = () => {
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <Text>Library</Text>
-      </SafeAreaView>
+      <SafeAreaView style={styles.safeArea} />
     </ThemedView>
   );
-}
+};
+
+export default LoginScreen;
 
 const styles = StyleSheet.create({
   container: {
