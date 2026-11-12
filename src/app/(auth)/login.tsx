@@ -1,32 +1,14 @@
-import { Platform, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { themeConfig } from '@/theme';
+import LoginScreen from '@/components/screens/not-protected/LoginScreen/LoginScreen';
+import AppSafeArea from '@/components/ui/AppSafeArea/AppSafeArea';
 
 //ab.
 
-const LoginScreen = () => {
+const Login = () => {
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea} />
-    </View>
+    <AppSafeArea>
+      <LoginScreen />
+    </AppSafeArea>
   );
 };
 
-export default LoginScreen;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: themeConfig.spacing[6],
-    alignItems: 'center',
-    gap: themeConfig.spacing[4],
-    paddingBottom: (Platform.select({ ios: 50, android: 80 }) ?? 0) + themeConfig.spacing[4],
-    maxWidth: 800,
-  },
-});
+export default Login;
