@@ -1,0 +1,31 @@
+/** Shared palette. Tailwind family/shade names, with the app's own color values. */
+export const colors = {
+  black: '#000000',
+  white: '#FFFFFF',
+  violet: {
+    50: '#F9F7FF',
+    100: '#F5F1FF',
+    150: '#F1EFF8',
+    200: '#EAE5F7',
+    250: '#E0D7FF',
+    300: '#D7CEE9',
+    400: '#C4B5FD',
+    700: '#67519D',
+  },
+  indigo: { 400: '#A5B4FC' },
+  gray: {
+    200: '#C7CAD6',
+    300: '#B3ADC4',
+    400: '#969BAD',
+    500: '#625B76',
+    600: '#423D54',
+    650: '#2B283A',
+    700: '#272437',
+    750: '#211C32',
+    800: '#211735',
+    850: '#1D1A2A',
+    900: '#181425',
+    950: '#13121D',
+  },
+  slate: { 800: '#222632', 950: '#101218' },
+} as const;

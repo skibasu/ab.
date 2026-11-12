@@ -1,26 +1,57 @@
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { fontFamilies } from '@/theme/fonts';
+import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+void SplashScreen.preventAutoHideAsync().catch(console.error);
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const isAuthenticated = false; // Replace with your authentication logic
+  const [fontsLoaded, fontError] = useFonts(fontFamilies);
+  const theme = useAppTheme();
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) SplashScreen.hide();
+    if (fontError) throw fontError;
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded) return null;
+
+  const navigationBase = theme.dark ? DarkTheme : DefaultTheme;
+  const navigationTheme = {
+    ...navigationBase,
+    colors: {
+      ...navigationBase.colors,
+      primary: theme.backgroundColor.primary,
+      background: theme.backgroundColor.default,
+      card: theme.backgroundColor.default,
+      text: theme.textColor.primary,
+      border: theme.borderColor.default,
+      notification: theme.backgroundColor.accent,
+    },
+  };
+  const isAuthenticated = true; // Replace with your authentication logic
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Protected
-          guard={!isAuthenticated}
-          redirectTo="/"
-        >
-          <Stack.Screen name="(auth)" />
-        </Stack.Protected>
-        <Stack.Protected
-          guard={isAuthenticated}
-          redirectTo="/login"
-        >
-          <Stack.Screen name="(app)" />
-        </Stack.Protected>
-      </Stack>
+    <ThemeProvider value={navigationTheme}>
+      <SafeAreaProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Protected
+            guard={!isAuthenticated}
+            redirectTo="/"
+          >
+            <Stack.Screen name="(auth)" />
+          </Stack.Protected>
+          <Stack.Protected
+            guard={isAuthenticated}
+            redirectTo="/login"
+          >
+            <Stack.Screen name="(app)" />
+          </Stack.Protected>
+        </Stack>
+      </SafeAreaProvider>
     </ThemeProvider>
   );
 }
