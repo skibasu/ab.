@@ -1,14 +1,13 @@
-import type { ComponentPropsWithRef } from 'react';
+import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { Text } from 'react-native';
 
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { styles } from './styles';
 
-export type SubtitleProps = Omit<ComponentPropsWithRef<typeof Text>, 'children'> & {
-  text: string;
-};
+export type SubtitleProps = Omit<ComponentPropsWithRef<typeof Text>, 'children'> &
+  ({ text: string; children?: never } | { text?: never; children: ReactNode });
 
-const Subtitle = ({ text, style, ...props }: SubtitleProps) => {
+const Subtitle = ({ text, children, style, ...props }: SubtitleProps) => {
   const theme = useAppTheme();
   const localStyles = styles(theme);
 
@@ -17,7 +16,7 @@ const Subtitle = ({ text, style, ...props }: SubtitleProps) => {
       {...props}
       style={[localStyles.subtitle, style]}
     >
-      {text}
+      {text ?? children}
     </Text>
   );
 };

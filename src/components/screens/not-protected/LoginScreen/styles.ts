@@ -1,18 +1,24 @@
-import { AppTheme } from '@/theme';
 import { StyleSheet } from 'react-native';
 
-export const styles = (theme: AppTheme) =>
-  StyleSheet.create({
-    viewport: {
-      flex: 1,
-      width: '100%',
-    },
-    container: {
-      flexGrow: 1,
-      gap: theme.spacing[6],
+import { styles as authStyles } from '@/components/auth/styles';
+import type { AppTheme } from '@/theme';
+
+export const styles = (theme: AppTheme) => ({
+  ...authStyles(theme),
+  ...StyleSheet.create({
+    registerContainer: {
+      paddingHorizontal: 40,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 20,
     },
-  });
+    registerSubtitle: {
+      textAlign: 'center',
+    },
+    registerActions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }),
+});

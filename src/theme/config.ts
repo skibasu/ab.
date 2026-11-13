@@ -100,6 +100,7 @@ export const textStyles = {
   playerTitle: textStyle(fontSize['2xl'], fontWeight.bold),
   bookTile: textStyle(fontSize.sm, fontWeight.semibold),
   metadata: textStyle(fontSize.xs, fontWeight.medium),
+  link: textStyle(fontSize.xs, fontWeight.semibold),
   caption: textStyle(fontSize['2xs'], fontWeight.medium),
   button: textStyle(fontSize.lg, fontWeight.bold),
   time: textStyle(fontSize.xs, fontWeight.medium),

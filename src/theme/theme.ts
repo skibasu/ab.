@@ -21,6 +21,9 @@ const modeConfig = {
     textColor: {
       primary: colors.gray[750],
       secondary: colors.gray[500],
+      link: colors.violet[700],
+      linkPressed: colors.gray[800],
+      linkDisabled: colors.gray[400],
       onPrimary: colors.gray[800],
       onSecondary: colors.gray[800],
       onAccent: colors.gray[800],
@@ -64,6 +67,9 @@ const modeConfig = {
     textColor: {
       primary: colors.violet[100],
       secondary: colors.gray[300],
+      link: colors.violet[400],
+      linkPressed: colors.violet[250],
+      linkDisabled: colors.gray[600],
       onPrimary: colors.gray[900],
       onSecondary: colors.gray[900],
       onAccent: colors.gray[900],
