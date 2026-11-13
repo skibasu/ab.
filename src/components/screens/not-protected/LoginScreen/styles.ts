@@ -3,12 +3,16 @@ import { StyleSheet } from 'react-native';
 
 export const styles = (theme: AppTheme) =>
   StyleSheet.create({
-    container: {
+    viewport: {
       flex: 1,
-      gap: theme.spacing[6],
       width: '100%',
+    },
+    container: {
+      flexGrow: 1,
+      gap: theme.spacing[6],
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 16,
+      paddingVertical: 20,
     },
   });

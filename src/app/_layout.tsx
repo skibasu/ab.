@@ -38,7 +38,14 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={navigationTheme}>
       <SafeAreaProvider>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'fade',
+            animationDuration: 250,
+            animationTypeForReplace: 'push',
+          }}
+        >
           <Stack.Protected
             guard={!isAuthenticated}
             redirectTo="/"
