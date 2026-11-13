@@ -1,20 +1,18 @@
+import { styles as globalStyles } from '@/styles/globalStyles';
+import type { AppTheme } from '@/theme';
 import { StyleSheet } from 'react-native';
 
-import { styles as authStyles } from '@/components/auth/styles';
-import type { AppTheme } from '@/theme';
-
 export const styles = (theme: AppTheme) => ({
-  ...authStyles(theme),
+  ...globalStyles(theme),
   ...StyleSheet.create({
-    registerContainer: {
-      paddingHorizontal: 40,
+    loginContainer: {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    registerSubtitle: {
+    loginSubtitle: {
       textAlign: 'center',
     },
-    registerActions: {
+    loginActions: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       alignItems: 'center',

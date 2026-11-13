@@ -9,15 +9,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 type AbHeaderProps = {
   title: string | null;
   iconList: IconName[];
+  transparent?: boolean;
 };
 
-const Header = ({ title, iconList }: AbHeaderProps) => {
+const Header = ({ title, iconList, transparent = false }: AbHeaderProps) => {
   const theme = useAppTheme();
   const stylesLocal = styles(theme);
   return (
     <SafeAreaView
       edges={['top', 'left', 'right']}
-      style={stylesLocal.container}
+      style={!transparent && stylesLocal.container}
     >
       <View style={stylesLocal.row}>
         <HeaderTitle text={title} />

@@ -32,12 +32,12 @@ const Login = () => {
           subtitle="Bring your books. Find your rhythm."
         />
         <Form />
-        <View style={localStyles.registerContainer}>
+        <View style={localStyles.loginContainer}>
           <Subtitle
-            style={localStyles.registerSubtitle}
+            style={localStyles.loginSubtitle}
             text="New here?"
           />
-          <View style={localStyles.registerActions}>
+          <View style={localStyles.loginActions}>
             <AppLink
               href="/(auth)/register"
               text="Create an account"

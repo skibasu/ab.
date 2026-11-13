@@ -9,10 +9,11 @@ export const styles = (theme: AppTheme) =>
     },
     container: {
       flexGrow: 1,
+      width: '100%',
       gap: theme.spacing[6],
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 16,
+      paddingHorizontal: 24,
       paddingVertical: 20,
     },
   });

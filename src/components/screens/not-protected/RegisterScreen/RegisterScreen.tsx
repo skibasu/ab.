@@ -33,12 +33,9 @@ const Register = () => {
           subtitle="Create an account for your audiobooks."
         />
         <Form />
-        <View style={localStyles.signInContainer}>
-          <Subtitle
-            style={localStyles.signInSubtitle}
-            text="Already have an account?"
-          />
-          <View style={localStyles.signInActions}>
+        <View style={localStyles.registerContainer}>
+          <Subtitle text="Already have an account?" />
+          <View style={localStyles.registerActions}>
             <AppLink
               href="/(auth)/login"
               text="Sign in"
