@@ -12,7 +12,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     alignItems: 'center',
-    gap: themeConfig.spacing[4],
+    gap: themeConfig.spacing[6],
     maxWidth: 800,
   },
 });

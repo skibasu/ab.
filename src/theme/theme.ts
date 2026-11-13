@@ -21,14 +21,19 @@ const modeConfig = {
     textColor: {
       primary: colors.gray[750],
       secondary: colors.gray[500],
+      link: colors.violet[700],
+      linkPressed: colors.gray[800],
+      linkDisabled: colors.gray[400],
       onPrimary: colors.gray[800],
       onSecondary: colors.gray[800],
       onAccent: colors.gray[800],
       disabled: colors.gray[500],
+      error: colors.rose[700],
     },
     borderColor: {
       default: colors.violet[300],
       focus: colors.violet[700],
+      error: colors.rose[700],
     },
     tintColor: {
       primary: colors.gray[750],
@@ -62,14 +67,19 @@ const modeConfig = {
     textColor: {
       primary: colors.violet[100],
       secondary: colors.gray[300],
+      link: colors.violet[400],
+      linkPressed: colors.violet[250],
+      linkDisabled: colors.gray[600],
       onPrimary: colors.gray[900],
       onSecondary: colors.gray[900],
       onAccent: colors.gray[900],
       disabled: colors.gray[300],
+      error: colors.rose[300],
     },
     borderColor: {
       default: colors.gray[600],
       focus: colors.violet[400],
+      error: colors.rose[300],
     },
     tintColor: {
       primary: colors.violet[100],

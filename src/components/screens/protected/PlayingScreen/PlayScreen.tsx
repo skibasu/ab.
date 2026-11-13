@@ -1,4 +1,4 @@
-import { styles } from '@/components/screens/protected/HomeScreen/styles';
+import { styles } from '@/components/screens/protected/PlayingScreen/styles';
 import { View } from 'react-native';
 
 const PlayScreen = () => {

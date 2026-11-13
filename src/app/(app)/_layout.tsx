@@ -8,14 +8,12 @@ export default function AppLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: 'Library',
           header: () => (
             <Header
               title="Library"
               iconList={['search', 'settings']}
             />
           ),
-          headerTransparent: false,
         }}
       />
       <Stack.Screen

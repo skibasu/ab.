@@ -8,12 +8,7 @@ export const styles = (theme: AppTheme) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingTop: 11,
-      paddingHorizontal: theme.spacing[4],
-    },
-
-    actions: {
-      flexDirection: 'row',
-      gap: theme.spacing[2],
+      paddingTop: theme.spacing[3],
+      paddingHorizontal: theme.spacing[6],
     },
   });

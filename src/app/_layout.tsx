@@ -1,4 +1,5 @@
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useAuthStore } from '@/stores/auth-store';
 import { fontFamilies } from '@/theme/fonts';
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
@@ -11,6 +12,7 @@ void SplashScreen.preventAutoHideAsync().catch(console.error);
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(fontFamilies);
   const theme = useAppTheme();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
     if (fontsLoaded || fontError) SplashScreen.hide();
@@ -32,12 +34,18 @@ export default function RootLayout() {
       notification: theme.backgroundColor.accent,
     },
   };
-  const isAuthenticated = true; // Replace with your authentication logic
 
   return (
     <ThemeProvider value={navigationTheme}>
       <SafeAreaProvider>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'fade',
+            animationDuration: 250,
+            animationTypeForReplace: 'push',
+          }}
+        >
           <Stack.Protected
             guard={!isAuthenticated}
             redirectTo="/"
