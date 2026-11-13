@@ -32,7 +32,7 @@ export default function RootLayout() {
       notification: theme.backgroundColor.accent,
     },
   };
-  const isAuthenticated = true; // Replace with your authentication logic
+  const isAuthenticated = false; // Replace with your authentication logic
 
   return (
     <ThemeProvider value={navigationTheme}>

@@ -13,7 +13,7 @@ export const colors = {
     700: '#67519D',
   },
   indigo: { 400: '#A5B4FC' },
-  red: { 400: '#F87171', 700: '#B91C1C' },
+  rose: { 300: '#FF9EAF', 700: '#A82844' },
   gray: {
     200: '#C7CAD6',
     300: '#B3ADC4',

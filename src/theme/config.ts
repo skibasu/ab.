@@ -5,6 +5,7 @@ import { colors } from './colors';
 /** Native units; one spacing step is 4, as in Tailwind. */
 const spacing = {
   0: 0,
+  0.5: 2,
   1: 4,
   1.5: 6,
   2: 8,
@@ -53,6 +54,7 @@ export const themeConfig = {
     card: spacing[4.75],
     artwork: spacing[5.5],
   },
+  borderWidth: { input: spacing[0.5] },
   fontFamily,
   fontWeight,
   fontSize,
@@ -60,16 +62,22 @@ export const themeConfig = {
   letterSpacing: { normal: 0 },
   width: {
     icon: spacing[4.25],
+    providerIcon: spacing[5],
     iconButton: spacing[10.5],
     touchTarget: spacing[11],
   },
   height: {
     icon: spacing[4.25],
+    providerIcon: spacing[5],
     iconButton: spacing[10.5],
     touchTarget: spacing[11],
   },
-  minHeight: { button: spacing[13.75], input: spacing[13.75] },
-  maxWidth: { content: spacing[85.5], buttonLabel: spacing[56] },
+  minHeight: {
+    button: spacing[13.75],
+    input: spacing[13.75],
+    credentialInput: spacing[11],
+  },
+  maxWidth: { content: spacing[85.5], buttonLabel: spacing[56], providerButtonLabel: 222 },
 } as const;
 
 function textStyle<Size extends number, Weight extends TextStyle['fontWeight']>(

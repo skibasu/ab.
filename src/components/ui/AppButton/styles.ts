@@ -6,7 +6,6 @@ export const styles = (theme: AppTheme) =>
   StyleSheet.create({
     button: {
       width: '100%',
-      maxWidth: theme.maxWidth.content,
       minHeight: theme.minHeight.button,
       borderRadius: theme.borderRadius.button,
       padding: theme.spacing[4],
@@ -17,7 +16,7 @@ export const styles = (theme: AppTheme) =>
     },
     label: {
       ...theme.textStyles.button,
-      maxWidth: theme.maxWidth.buttonLabel,
+
       flexShrink: 1,
       textAlign: 'center',
     },
