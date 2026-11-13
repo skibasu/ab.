@@ -1,6 +1,6 @@
 import { styles } from '@/components/global/Header/styles';
-import ButtonHeader from '@/components/ui/ButtonHeader/ButtonHeader';
-import ScreenTitle from '@/components/ui/ScreenTitle/ScreenTitle';
+import Actions from '@/components/ui/Actions/Actions';
+import HeaderTitle from '@/components/ui/HeaderTitle/HeaderTitle';
 import type { IconName } from '@/constants/icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { View } from 'react-native';
@@ -20,19 +20,8 @@ const Header = ({ title, iconList }: AbHeaderProps) => {
       style={stylesLocal.container}
     >
       <View style={stylesLocal.row}>
-        <ScreenTitle title={title} />
-        {iconList.length > 0 && (
-          <View style={stylesLocal.actions}>
-            {iconList.map((icon) => (
-              <ButtonHeader
-                key={icon}
-                icon={icon}
-                label={icon}
-                onPress={() => console.log('pressed')}
-              />
-            ))}
-          </View>
-        )}
+        <HeaderTitle text={title} />
+        <Actions iconList={iconList} />
       </View>
     </SafeAreaView>
   );

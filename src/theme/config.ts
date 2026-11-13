@@ -94,7 +94,7 @@ function textStyle<Size extends number, Weight extends TextStyle['fontWeight']>(
 
 /** Reusable text styles; omit lineHeight when native font metrics should apply. */
 export const textStyles = {
-  screenTitle: textStyle(fontSize['4xl'], fontWeight.bold),
+  pageTitle: textStyle(fontSize['4xl'], fontWeight.bold),
   sectionHeading: textStyle(fontSize.lg, fontWeight.semibold),
   bookTitle: textStyle(fontSize.lg, fontWeight.bold),
   playerTitle: textStyle(fontSize['2xl'], fontWeight.bold),
@@ -107,5 +107,5 @@ export const textStyles = {
     ...textStyle(fontSize.base, fontWeight.medium),
     lineHeight: themeConfig.lineHeight[6],
   },
-  libraryTitle: textStyle(fontSize['3xl'], fontWeight.bold),
+  headerTitle: textStyle(fontSize['3xl'], fontWeight.bold),
 } as const satisfies Record<string, TextStyle>;

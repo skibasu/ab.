@@ -5,7 +5,7 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { styles } from './styles';
 
 export type AppInputProps = ComponentPropsWithRef<typeof TextInput> & {
-  label: string;
+  label?: string;
   errorMessage?: string;
   error?: boolean;
   withError?: boolean;
@@ -44,7 +44,9 @@ const AppInput = ({
 
   return (
     <View style={localStyles.container}>
-      <Text style={[localStyles.label, isDisabled && localStyles.disabledLabel]}>{label}</Text>
+      {label && (
+        <Text style={[localStyles.label, isDisabled && localStyles.disabledLabel]}>{label}</Text>
+      )}
       <View
         style={[localStyles.surface, isDisabled && localStyles.disabledSurface, { borderColor }]}
       >

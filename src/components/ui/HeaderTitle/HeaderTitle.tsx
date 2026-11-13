@@ -2,14 +2,14 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { Text } from 'react-native';
 import { styles } from './styles';
 
-type MainTitleProps = {
-  title: string | null;
+type HeaderTitleProps = {
+  text: string | null;
 };
 
-const ScreenTitle = ({ title }: MainTitleProps) => {
+const HeaderTitle = ({ text }: HeaderTitleProps) => {
   const theme = useAppTheme();
   const localStyles = styles(theme);
-  return title ? <Text style={localStyles.title}>{title}</Text> : null;
+  return text ? <Text style={localStyles.title}>{text}</Text> : null;
 };
 
-export default ScreenTitle;
+export default HeaderTitle;
