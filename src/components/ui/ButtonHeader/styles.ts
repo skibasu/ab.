@@ -17,5 +17,5 @@ export const styles = (theme: AppTheme) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    image: { width: theme.width.icon, height: theme.height.icon },
+    image: { width: theme.width.icon, height: theme.height.icon, objectFit: 'contain' },
   });

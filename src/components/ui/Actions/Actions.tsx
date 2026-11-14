@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import ButtonHeader from '@/components/ui/ButtonHeader/ButtonHeader';
 import type { IconName } from '@/constants/icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useRouter } from 'expo-router';
 import { styles } from './styles';
 
 export type ActionsProps = {
@@ -10,6 +11,7 @@ export type ActionsProps = {
 };
 
 const Actions = ({ iconList }: ActionsProps) => {
+  const router = useRouter();
   const theme = useAppTheme();
   const localStyles = styles(theme);
 
@@ -22,7 +24,7 @@ const Actions = ({ iconList }: ActionsProps) => {
           key={icon}
           icon={icon}
           label={icon}
-          onPress={() => console.log('pressed')}
+          onPress={() => (icon === 'search' ? router.push('/search') : console.log('pressed'))}
         />
       ))}
     </View>

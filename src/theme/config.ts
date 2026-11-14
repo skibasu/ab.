@@ -106,7 +106,7 @@ export const textStyles = {
   time: textStyle(fontSize.xs, fontWeight.medium),
   input: {
     ...textStyle(fontSize.base, fontWeight.medium),
-    lineHeight: themeConfig.lineHeight[6],
+    textAlignVertical: 'center',
   },
   headerTitle: textStyle(fontSize['3xl'], fontWeight.bold),
 } as const satisfies Record<string, TextStyle>;

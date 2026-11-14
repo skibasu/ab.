@@ -26,6 +26,7 @@ export const styles = (theme: AppTheme) =>
       ...theme.textStyles.input,
       flex: 1,
       minWidth: 0,
+      minHeight: theme.lineHeight[6],
       padding: 0,
       color: theme.textColor.primary,
       includeFontPadding: false,

@@ -1,4 +1,5 @@
 import { IconName, icons } from '@/constants/icons';
+import { HEADER_ICON_SIZES } from '@/constants/navigation';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Image } from 'expo-image';
 import { Pressable, View } from 'react-native';
@@ -15,7 +16,7 @@ const ButtonHeader = ({ label, icon, onPress }: ButtonHeaderProps) => {
   const theme = useAppTheme();
   const stylesLocal = styles(theme);
   const isDisabled = !onPress;
-
+  const iconSize = HEADER_ICON_SIZES[icon];
   return (
     <Pressable
       accessibilityLabel={label}
@@ -30,7 +31,7 @@ const ButtonHeader = ({ label, icon, onPress }: ButtonHeaderProps) => {
           <Image
             accessible={false}
             source={icons[icon]}
-            style={stylesLocal.image}
+            style={[stylesLocal.image, iconSize]}
             tintColor={theme.tintColor.primary}
           />
         </View>
