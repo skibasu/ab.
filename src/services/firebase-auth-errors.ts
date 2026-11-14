@@ -1,6 +1,7 @@
 import { FirebaseError } from 'firebase/app';
 
 const messages: Record<string, string> = {
+  'auth/email-not-verified': 'Verify your email before signing in.',
   'auth/invalid-credential': 'Check your email and password and try again.',
   'auth/user-not-found': 'Check your email and password and try again.',
   'auth/wrong-password': 'Check your email and password and try again.',

@@ -16,7 +16,7 @@ const Form = () => {
     control,
     handleSubmit,
     setError,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isSubmitSuccessful },
   } = useForm({
     defaultValues: AUTH_FORM_DEFAULT_VALUES,
     resolver: yupResolver(registerSchema),
@@ -26,7 +26,12 @@ const Form = () => {
   const submit = handleSubmit(async ({ email, password }) => {
     Keyboard.dismiss();
     try {
-      await register(email, password);
+      const { verificationEmailSent } = await register(email, password);
+      if (!verificationEmailSent) {
+        setError('root.auth', {
+          message: 'Account created, but the verification email could not be sent.',
+        });
+      }
     } catch (error) {
       setError('root.auth', {
         message: getAuthErrorMessage(error, 'Could not create your account. Try again.'),
@@ -46,6 +51,7 @@ const Form = () => {
             value={field.value}
             onBlur={field.onBlur}
             onChangeText={field.onChange}
+            editable={!isSubmitting && !isSubmitSuccessful}
             placeholder="you@example.com"
             autoCapitalize="none"
             autoCorrect={false}
@@ -64,6 +70,7 @@ const Form = () => {
             value={field.value}
             onBlur={field.onBlur}
             onChangeText={field.onChange}
+            editable={!isSubmitting && !isSubmitSuccessful}
             placeholder="Enter your password"
             secureTextEntry
             autoCapitalize="none"
@@ -73,7 +80,15 @@ const Form = () => {
           />
         )}
       />
-      {authError && (
+      {isSubmitSuccessful ? (
+        <ThemedText
+          type="small"
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          Check your email to verify your account.
+        </ThemedText>
+      ) : authError ? (
         <ThemedText
           type="small"
           themeColor="error"
@@ -82,10 +97,11 @@ const Form = () => {
         >
           {authError}
         </ThemedText>
-      )}
+      ) : null}
       <AppButton
         label="Create account"
         loading={isSubmitting}
+        disabled={isSubmitSuccessful}
         onPress={() => void submit()}
       />
     </View>

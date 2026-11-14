@@ -17,7 +17,10 @@ export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>();
   const isReady = fontsLoaded && isAuthenticated !== undefined;
 
-  useEffect(() => onAuthStateChanged(auth, (user) => setIsAuthenticated(user !== null)), []);
+  useEffect(
+    () => onAuthStateChanged(auth, (user) => setIsAuthenticated(user?.emailVerified === true)),
+    [],
+  );
 
   useEffect(() => {
     if (isReady || fontError) SplashScreen.hide();
