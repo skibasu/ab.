@@ -5,20 +5,22 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 
 type IconProps = {
   name: IconName;
-  size?: number;
+  width?: number;
+  height?: number;
   color?: string;
 };
 
-export default function Icon({ name, size, color }: IconProps) {
+export default function Icon({ name, width, height, color }: IconProps) {
   const theme = useAppTheme();
-  const iconSize = size ?? theme.width.icon;
+  const iconWidth = width ?? theme.width.icon;
+  const iconHeight = height ?? theme.height.icon;
 
   return (
     <Image
       accessible={false}
       source={icons[name]}
       contentFit="contain"
-      style={{ width: iconSize, height: iconSize }}
+      style={{ width: iconWidth, height: iconHeight }}
       tintColor={color ?? theme.tintColor.primary}
     />
   );
