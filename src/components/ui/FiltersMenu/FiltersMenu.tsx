@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
-import Filter, { type FilterProps } from '@/components/ui/Filter/Filter';
+import FilterList, { type FilterOption } from '@/components/ui/FilterList/FilterList';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { styles } from './styles';
-
-export type FilterOption = Pick<FilterProps, 'icon' | 'filterLabel'>;
 
 export type FiltersMenuProps = {
   filters: FilterOption[];
@@ -33,15 +31,11 @@ const FiltersMenu = ({ filters, title, description }: FiltersMenuProps) => {
         accessibilityLabel={title}
         style={localStyles.filters}
       >
-        {filters.map((filter) => (
-          <Filter
-            key={filter.filterLabel}
-            icon={filter.icon}
-            filterLabel={filter.filterLabel}
-            selected={filter === selectedFilter}
-            onPress={() => setSelectedLabel(filter.filterLabel)}
-          />
-        ))}
+        <FilterList
+          filters={filters}
+          selectedLabel={selectedFilter?.filterLabel}
+          onSelect={(filter) => setSelectedLabel(filter.filterLabel)}
+        />
       </View>
       <Text style={localStyles.description}>{description}</Text>
     </View>

@@ -1,4 +1,4 @@
-import type { FilterOption } from '@/components/ui/FiltersMenu/FiltersMenu';
+import type { FilterOption } from '@/components/ui/FilterList/FilterList';
 
 export const SEARCH_FILTERS: FilterOption[] = [
   { filterLabel: 'Title + author' },
