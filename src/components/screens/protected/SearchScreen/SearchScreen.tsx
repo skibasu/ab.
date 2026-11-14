@@ -1,24 +1,44 @@
 import { styles } from '@/components/screens/protected/SearchScreen/styles';
 import Accordion from '@/components/ui/Accordion/Accordion';
+import SearchInput from '@/components/ui/SearchInput/SearchInput';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { ScrollView, View } from 'react-native';
+import { useHeaderHeight } from 'expo-router/build/react-navigation/elements/Header/useHeaderHeight.js';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 
 const Search = () => {
   const theme = useAppTheme();
   const localStyles = styles(theme);
+  const headerHeight = useHeaderHeight();
+  const [query, setQuery] = useState('');
+
   return (
-    <>
+    <KeyboardAvoidingView
+      style={localStyles.viewport}
+      enabled={Platform.OS === 'ios'}
+      behavior="padding"
+      keyboardVerticalOffset={headerHeight}
+    >
       <ScrollView
         style={localStyles.viewport}
         contentContainerStyle={localStyles.container}
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+        automaticallyAdjustContentInsets={false}
+        contentInsetAdjustmentBehavior="never"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       ></ScrollView>
       <View style={localStyles.buttonContainer}>
         <Accordion
           title="Filters"
           iconName="filters"
         />
+        <SearchInput
+          value={query}
+          onChangeText={setQuery}
+        />
       </View>
-    </>
+    </KeyboardAvoidingView>
   );
 };
 

@@ -10,6 +10,12 @@ export const styles = (theme: AppTheme) =>
       borderRadius: theme.borderRadius.control,
       overflow: 'hidden',
     },
+    border: {
+      ...StyleSheet.absoluteFill,
+      borderRadius: theme.borderRadius.control,
+      borderWidth: 1,
+      borderColor: theme.borderColor.default,
+    },
     container: {
       width: '100%',
       justifyContent: 'space-between',

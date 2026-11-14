@@ -11,6 +11,7 @@ export const styles = (theme: AppTheme) => {
     ...StyleSheet.create({
       buttonContainer: {
         width: '100%',
+        gap: theme.spacing[3],
         paddingHorizontal: theme.spacing[6],
         paddingBottom: theme.spacing[8],
       },

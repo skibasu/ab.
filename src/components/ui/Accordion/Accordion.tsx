@@ -68,6 +68,10 @@ const Accordion = ({ title, iconName }: AccordionProps) => {
         importantForAccessibility={isExpanded ? 'auto' : 'no-hide-descendants'}
         style={[stylesLocal.content, contentAnimatedStyle]}
       />
+      <View
+        pointerEvents="none"
+        style={stylesLocal.border}
+      />
     </View>
   );
 };
