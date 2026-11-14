@@ -84,7 +84,7 @@ Change a shared shade in `colors.ts` to update every referencing role. Change it
 
 - `textStyles` references the font-family/size/weight configuration instead of repeating numeric values. The 11 existing text roles preserve their metrics; names such as `playerTitle`, `caption`, `button` and `input` describe intended use.
 - The root layout loads Inter 500, 600 and 700 through `expo-font` before rendering routes. The font files ship with the app and need no network connection at runtime. The splash screen hides after loading or on a loading error; an error is surfaced instead of leaving the splash visible. Text using `fontFamily.sans` or `textStyles` uses Inter; other text retains its existing font. Native font scaling remains enabled.
-- Omitted line height uses the font's native metrics. The input text style explicitly uses `lineHeight[6]` (24).
+- Text inputs use native font metrics without a forced line height, plus vertical centering on Android. Credential inputs keep a minimum text area of `lineHeight[6]` (24) to preserve the control height.
 - `width.iconButton` and `height.iconButton` are 42; `width.touchTarget` and `height.touchTarget` are 44. `minHeight.button` and `.input` are 55. `maxWidth.buttonLabel` is 224; `maxWidth.content` is 342.
 - `backgroundGradient.screen` contains colors and normalized start/end coordinates. It has no Figma matrix or logo gradient. Logo gradients belong to the imported SVG. A descriptor alone does not paint a component.
 

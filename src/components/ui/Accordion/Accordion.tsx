@@ -1,3 +1,4 @@
+import Filter from '@/components/ui/Filter/Filter';
 import Icon from '@/components/ui/icon';
 import { type IconName } from '@/constants/icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -66,8 +67,24 @@ const Accordion = ({ title, iconName }: AccordionProps) => {
         pointerEvents={isExpanded ? 'auto' : 'none'}
         accessibilityElementsHidden={!isExpanded}
         importantForAccessibility={isExpanded ? 'auto' : 'no-hide-descendants'}
-        style={[stylesLocal.content, contentAnimatedStyle]}
-      />
+        style={[stylesLocal.content, { flexDirection: 'row', gap: 12 }, contentAnimatedStyle]}
+      >
+        <Filter
+          label="Filter 1"
+          selected={true}
+          onPress={() => console.log('Filter 1 pressed')}
+        />
+        <Filter
+          label="Filter 2"
+          selected={false}
+          onPress={() => console.log('Filter 2 pressed')}
+        />
+        <Filter
+          label="Filter 3"
+          selected={false}
+          onPress={() => console.log('Filter 3 pressed')}
+        />
+      </Animated.View>
       <View
         pointerEvents="none"
         style={stylesLocal.border}

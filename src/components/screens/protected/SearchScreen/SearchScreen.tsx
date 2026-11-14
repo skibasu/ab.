@@ -1,5 +1,6 @@
 import { styles } from '@/components/screens/protected/SearchScreen/styles';
 import Accordion from '@/components/ui/Accordion/Accordion';
+import InfoPanel from '@/components/ui/InfoPanel/InfoPanel';
 import SearchInput from '@/components/ui/SearchInput/SearchInput';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useHeaderHeight } from 'expo-router/build/react-navigation/elements/Header/useHeaderHeight.js';
@@ -27,7 +28,13 @@ const Search = () => {
         contentInsetAdjustmentBehavior="never"
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-      ></ScrollView>
+      >
+        <InfoPanel
+          icon="books"
+          title="Find an audiobook"
+          message="Search your library by title or author."
+        />
+      </ScrollView>
       <View style={localStyles.buttonContainer}>
         <Accordion
           title="Filters"

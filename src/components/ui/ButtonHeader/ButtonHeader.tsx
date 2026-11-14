@@ -15,7 +15,11 @@ const ButtonHeader = ({ label, icon, onPress }: ButtonHeaderProps) => {
   const theme = useAppTheme();
   const stylesLocal = styles(theme);
   const isDisabled = !onPress;
-
+  const sizes: [number, number] = [0, 0];
+  if (icon === 'close') {
+    sizes[0] = 14;
+    sizes[1] = 14;
+  }
   return (
     <Pressable
       accessibilityLabel={label}
@@ -30,7 +34,10 @@ const ButtonHeader = ({ label, icon, onPress }: ButtonHeaderProps) => {
           <Image
             accessible={false}
             source={icons[icon]}
-            style={stylesLocal.image}
+            style={[
+              stylesLocal.image,
+              sizes[0] && sizes[1] ? { width: sizes[0], height: sizes[1] } : {},
+            ]}
             tintColor={theme.tintColor.primary}
           />
         </View>

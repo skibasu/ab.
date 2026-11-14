@@ -14,7 +14,7 @@ export const styles = (theme: AppTheme) =>
       alignItems: 'center',
       gap: theme.spacing[3],
       paddingHorizontal: theme.spacing[4] - 1,
-      paddingVertical: theme.spacing[3] - 1,
+      //  paddingVertical: theme.spacing[3] - 1,
       height: 48,
     },
     focusRing: {
@@ -29,8 +29,8 @@ export const styles = (theme: AppTheme) =>
       flexShrink: 0,
     },
     searchGlyph: {
-      width: 18.6,
-      height: 18.6,
+      width: 17,
+      height: 17,
     },
     input: {
       ...theme.textStyles.input,

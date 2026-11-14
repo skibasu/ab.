@@ -1,6 +1,7 @@
 export const icons = {
   alert: require('@/assets/svg/alert.svg'),
   arrowDown: require('@/assets/svg/arrow-down.svg'),
+  audiobooks: require('@/assets/svg/audiobooks.svg'),
   back: require('@/assets/svg/back.svg'),
   books: require('@/assets/svg/books.svg'),
   check: require('@/assets/svg/check.svg'),
