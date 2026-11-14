@@ -1,27 +1,39 @@
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Controller, useForm } from 'react-hook-form';
-import { View } from 'react-native';
+import { Keyboard, View } from 'react-native';
 
+import { ThemedText } from '@/components/themed-text';
 import AppButton from '@/components/ui/AppButton/AppButton';
 import AppInput from '@/components/ui/AppInput/AppInput';
 import { AUTH_FORM_DEFAULT_VALUES } from '@/constants/auth-form-defaults';
-import { useAuthStore } from '@/stores/auth-store';
+import { login } from '@/services/firebase';
+import { getAuthErrorMessage } from '@/services/firebase-auth-errors';
 import { styles } from './styles';
 import { loginSchema } from './validation/loginSchema';
 
 const Form = () => {
-  const setIsAuthenticated = useAuthStore((state) => state.setIsAuthenticated);
   const {
     control,
     handleSubmit,
-    formState: { isSubmitting },
+    setError,
+    formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: AUTH_FORM_DEFAULT_VALUES,
     resolver: yupResolver(loginSchema),
     mode: 'onChange',
     reValidateMode: 'onChange',
   });
-  const submit = handleSubmit(() => setIsAuthenticated(true));
+  const submit = handleSubmit(async ({ email, password }) => {
+    Keyboard.dismiss();
+    try {
+      await login(email, password);
+    } catch (error) {
+      setError('root.auth', {
+        message: getAuthErrorMessage(error, 'Could not sign in. Try again.'),
+      });
+    }
+  });
+  const authError = errors.root?.auth?.message;
 
   return (
     <View style={styles.container}>
@@ -61,6 +73,16 @@ const Form = () => {
           />
         )}
       />
+      {authError && (
+        <ThemedText
+          type="small"
+          themeColor="error"
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          {authError}
+        </ThemedText>
+      )}
       <AppButton
         label="Login"
         loading={isSubmitting}
