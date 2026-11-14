@@ -24,7 +24,11 @@ const Actions = ({ iconList }: ActionsProps) => {
           key={icon}
           icon={icon}
           label={icon}
-          onPress={() => (icon === 'search' ? router.push('/search') : console.log('pressed'))}
+          onPress={() => {
+            if (icon === 'search') router.push('/search');
+            else if (icon === 'settings') router.push('/settings');
+            else if (icon === 'close') router.back();
+          }}
         />
       ))}
     </View>

@@ -7,6 +7,10 @@ export default function AppLayout() {
   return (
     <Stack>
       <Stack.Screen
+        name="settings"
+        options={{ title: 'Settings' }}
+      />
+      <Stack.Screen
         name="index"
         options={{
           header: () => <Header {...APP_HEADERS.library} />,

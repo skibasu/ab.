@@ -45,3 +45,5 @@ export async function login(email: string, password: string): Promise<UserCreden
 
   return credential;
 }
+
+export const logout = (): Promise<void> => signOut(auth);

@@ -1,12 +1,13 @@
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { ROOT_STACK_OPTIONS } from '@/constants/navigation';
 import { auth } from '@/services/firebase';
+import { useAuthStore } from '@/stores/auth-store';
 import { fontFamilies } from '@/theme/fonts';
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { onAuthStateChanged } from 'firebase/auth';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 void SplashScreen.preventAutoHideAsync().catch(console.error);
@@ -14,13 +15,12 @@ void SplashScreen.preventAutoHideAsync().catch(console.error);
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(fontFamilies);
   const theme = useAppTheme();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>();
-  const isReady = fontsLoaded && isAuthenticated !== undefined;
+  const isAuthenticated = useAuthStore((state) => state.user?.emailVerified === true);
+  const isAuthReady = useAuthStore((state) => state.isAuthReady);
+  const setUser = useAuthStore((state) => state.setUser);
+  const isReady = fontsLoaded && isAuthReady;
 
-  useEffect(
-    () => onAuthStateChanged(auth, (user) => setIsAuthenticated(user?.emailVerified === true)),
-    [],
-  );
+  useEffect(() => onAuthStateChanged(auth, setUser), [setUser]);
 
   useEffect(() => {
     if (isReady || fontError) SplashScreen.hide();
