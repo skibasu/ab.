@@ -32,5 +32,12 @@ export const styles = (theme: AppTheme) =>
     pressed: { opacity: 0.75 },
     content: {
       width: '100%',
+      overflow: 'hidden',
+    },
+    contentMeasure: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
     },
   });

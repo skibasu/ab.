@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 
 import ButtonProvider from '@/components/ui/ButtonProvider/ButtonProvider';
+import { AUTH_PROVIDERS } from '@/constants/auth-providers';
 import { styles } from './styles';
 
 type ProviderButtonsListProps = {
@@ -9,21 +10,14 @@ type ProviderButtonsListProps = {
 
 const ProviderButtonsList = ({ labelPrefix = 'Login with' }: ProviderButtonsListProps) => (
   <View style={styles.container}>
-    <ButtonProvider
-      icon="apple"
-      label={`${labelPrefix} Apple`}
-      onPress={() => console.log('Apple login pressed')}
-    />
-    <ButtonProvider
-      icon="google"
-      label={`${labelPrefix} Google`}
-      onPress={() => console.log('Google login pressed')}
-    />
-    <ButtonProvider
-      icon="microsoft"
-      label={`${labelPrefix} Microsoft`}
-      onPress={() => console.log('Microsoft login pressed')}
-    />
+    {AUTH_PROVIDERS.map((provider) => (
+      <ButtonProvider
+        key={provider.icon}
+        icon={provider.icon}
+        label={`${labelPrefix} ${provider.label}`}
+        onPress={() => console.log(`${provider.label} login pressed`)}
+      />
+    ))}
   </View>
 );
 

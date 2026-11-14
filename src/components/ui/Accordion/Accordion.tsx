@@ -1,42 +1,49 @@
-import Filter from '@/components/ui/Filter/Filter';
 import Icon from '@/components/ui/icon';
+import { ACCORDION_ANIMATION_CONFIG } from '@/constants/animations';
 import { type IconName } from '@/constants/icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import Animated, {
-  Easing,
-  ReduceMotion,
-  useAnimatedStyle,
-  useDerivedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { styles } from './styles';
-
-const EXPANDED_HEIGHT = 250;
 
 type AccordionProps = {
   title: string;
   iconName: IconName;
+  children: ReactNode;
 };
 
-const Accordion = ({ title, iconName }: AccordionProps) => {
+const Accordion = ({ title, iconName, children }: AccordionProps) => {
   const theme = useAppTheme();
   const stylesLocal = styles(theme);
   const [isExpanded, setIsExpanded] = useState(false);
-  const progress = useDerivedValue(() =>
-    withTiming(isExpanded ? 1 : 0, {
-      duration: 250,
-      easing: Easing.inOut(Easing.quad),
-      reduceMotion: ReduceMotion.System,
-    }),
-  );
+  const expandedTarget = useRef(false);
+  const measuredHeight = useRef(0);
+  const contentHeight = useSharedValue(0);
+  const progress = useSharedValue(0);
   const contentAnimatedStyle = useAnimatedStyle(() => ({
-    height: progress.get() * EXPANDED_HEIGHT,
+    height: progress.get() * contentHeight.get(),
   }));
   const arrowAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${progress.get() * 180}deg` }],
   }));
+
+  const updateExpandedState = (expanded: boolean) => {
+    if (expandedTarget.current === expanded) setIsExpanded(expanded);
+  };
+
+  const handlePress = () => {
+    const nextExpanded = !expandedTarget.current;
+    expandedTarget.current = nextExpanded;
+
+    // Keep React commits outside the transition; both visual changes share one animation.
+    progress.set(
+      withTiming(nextExpanded ? 1 : 0, ACCORDION_ANIMATION_CONFIG, (finished) => {
+        if (finished) scheduleOnRN(updateExpandedState, nextExpanded);
+      }),
+    );
+  };
 
   return (
     <View style={stylesLocal.root}>
@@ -44,7 +51,7 @@ const Accordion = ({ title, iconName }: AccordionProps) => {
         accessibilityRole="button"
         accessibilityLabel={title}
         accessibilityState={{ expanded: isExpanded }}
-        onPress={() => setIsExpanded((expanded) => !expanded)}
+        onPress={handlePress}
         style={({ pressed }) => [stylesLocal.container, pressed && stylesLocal.pressed]}
       >
         <View style={stylesLocal.wrapper}>
@@ -67,23 +74,21 @@ const Accordion = ({ title, iconName }: AccordionProps) => {
         pointerEvents={isExpanded ? 'auto' : 'none'}
         accessibilityElementsHidden={!isExpanded}
         importantForAccessibility={isExpanded ? 'auto' : 'no-hide-descendants'}
-        style={[stylesLocal.content, { flexDirection: 'row', gap: 12 }, contentAnimatedStyle]}
+        style={[stylesLocal.content, contentAnimatedStyle]}
       >
-        <Filter
-          label="Filter 1"
-          selected={true}
-          onPress={() => console.log('Filter 1 pressed')}
-        />
-        <Filter
-          label="Filter 2"
-          selected={false}
-          onPress={() => console.log('Filter 2 pressed')}
-        />
-        <Filter
-          label="Filter 3"
-          selected={false}
-          onPress={() => console.log('Filter 3 pressed')}
-        />
+        <View
+          collapsable={false}
+          style={stylesLocal.contentMeasure}
+          onLayout={(event) => {
+            const nextHeight = event.nativeEvent.layout.height;
+            if (measuredHeight.current !== nextHeight) {
+              measuredHeight.current = nextHeight;
+              contentHeight.set(nextHeight);
+            }
+          }}
+        >
+          {children}
+        </View>
       </Animated.View>
       <View
         pointerEvents="none"

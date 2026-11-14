@@ -1,4 +1,5 @@
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { ROOT_STACK_OPTIONS } from '@/constants/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { fontFamilies } from '@/theme/fonts';
 import { useFonts } from 'expo-font';
@@ -38,14 +39,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={navigationTheme}>
       <SafeAreaProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            animation: 'fade',
-            animationDuration: 250,
-            animationTypeForReplace: 'push',
-          }}
-        >
+        <Stack screenOptions={ROOT_STACK_OPTIONS}>
           <Stack.Protected
             guard={!isAuthenticated}
             redirectTo="/"

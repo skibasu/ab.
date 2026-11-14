@@ -5,7 +5,10 @@ import type { AppTheme } from '@/theme';
 export const styles = (theme: AppTheme) =>
   StyleSheet.create({
     option: {
-      width: 101,
+      flex: 1,
+      minWidth: 0,
+      flexDirection: 'row',
+      gap: theme.spacing[1],
       minHeight: theme.height.touchTarget,
       padding: theme.spacing[1],
       borderRadius: theme.borderRadius.xl,
@@ -18,6 +21,7 @@ export const styles = (theme: AppTheme) =>
     },
     label: {
       ...theme.textStyles.metadata,
+      flexShrink: 1,
       color: theme.textColor.primary,
       textAlign: 'center',
     },
