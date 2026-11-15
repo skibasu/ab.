@@ -7,6 +7,7 @@ export const icons = {
   check: require('@/assets/svg/check.svg'),
   clear: require('@/assets/svg/clear.svg'),
   close: require('@/assets/svg/close.svg'),
+  envelope: require('@/assets/svg/envelope.svg'),
   filters: require('@/assets/svg/filters.svg'),
   import: require('@/assets/svg/import.svg'),
   next: require('@/assets/svg/next.svg'),

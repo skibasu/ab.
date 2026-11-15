@@ -1,4 +1,5 @@
 import { yupResolver } from '@hookform/resolvers/yup';
+import { useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { Keyboard, View } from 'react-native';
 
@@ -13,6 +14,8 @@ import { styles } from './styles';
 import { registerSchema } from './validation/registerSchema';
 
 const Form = () => {
+  const router = useRouter();
+
   const {
     control,
     handleSubmit,
@@ -31,7 +34,10 @@ const Form = () => {
       setError('root.auth', {
         message: AUTH_ERROR_MESSAGES.verificationEmailFailed,
       });
+      return;
     }
+
+    router.replace({ pathname: '/register-success', params: { email } });
   });
 
   const handleRegisterPress = () => {
