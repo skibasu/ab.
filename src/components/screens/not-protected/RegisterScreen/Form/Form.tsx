@@ -1,19 +1,21 @@
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
-import { Keyboard, View } from 'react-native';
+import { Keyboard, Text, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
 import AppButton from '@/components/ui/AppButton/AppButton';
 import AppInput from '@/components/ui/AppInput/AppInput';
 import { AUTH_FORM_DEFAULT_VALUES } from '@/constants/auth-form-defaults';
 import { AUTH_ERROR_MESSAGES } from '@/constants/errors';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { register } from '@/services/firebase';
 import { getAuthErrorMessage } from '@/services/firebase-auth-errors';
 import { styles } from './styles';
 import { registerSchema } from './validation/registerSchema';
 
 const Form = () => {
+  const theme = useAppTheme();
+  const localStyles = styles(theme);
   const router = useRouter();
 
   const {
@@ -50,7 +52,7 @@ const Form = () => {
   const authError = errors.root?.auth?.message;
 
   return (
-    <View style={styles.container}>
+    <View style={localStyles.container}>
       <Controller
         control={control}
         name="email"
@@ -90,22 +92,21 @@ const Form = () => {
         )}
       />
       {isSubmitSuccessful ? (
-        <ThemedText
-          type="small"
+        <Text
+          style={localStyles.success}
           accessibilityRole="alert"
           accessibilityLiveRegion="polite"
         >
           Check your email to verify your account.
-        </ThemedText>
+        </Text>
       ) : authError ? (
-        <ThemedText
-          type="small"
-          themeColor="error"
+        <Text
+          style={localStyles.error}
           accessibilityRole="alert"
           accessibilityLiveRegion="polite"
         >
           {authError}
-        </ThemedText>
+        </Text>
       ) : null}
       <AppButton
         label="Create account"

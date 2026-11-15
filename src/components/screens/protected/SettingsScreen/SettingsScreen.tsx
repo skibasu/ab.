@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { ScrollView } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
 import AppButton from '@/components/ui/AppButton/AppButton';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { logout } from '@/services/firebase';
@@ -36,18 +35,27 @@ export default function SettingsScreen() {
       style={localStyles.viewport}
     >
       <ScrollView contentContainerStyle={localStyles.container}>
-        <ThemedText accessibilityRole="header">Account</ThemedText>
-        <ThemedText type="small">Email</ThemedText>
-        <ThemedText selectable>{user?.email ?? 'No email address'}</ThemedText>
+        <Text
+          style={localStyles.title}
+          accessibilityRole="header"
+        >
+          Account
+        </Text>
+        <Text style={localStyles.label}>Email</Text>
+        <Text
+          style={localStyles.email}
+          selectable
+        >
+          {user?.email ?? 'No email address'}
+        </Text>
         {error && (
-          <ThemedText
-            type="small"
-            themeColor="error"
+          <Text
+            style={localStyles.error}
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"
           >
             {error}
-          </ThemedText>
+          </Text>
         )}
         <AppButton
           label="Logout"

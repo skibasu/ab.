@@ -1,4 +1,4 @@
-import { deleteApp, FirebaseError, initializeApp } from 'firebase/app';
+import { deleteApp, initializeApp } from 'firebase/app';
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
@@ -12,7 +12,7 @@ import {
   type UserCredential,
 } from 'firebase/auth';
 
-import { APP_ERROR_CODES, TECHNICAL_ERROR_MESSAGES } from '@/constants/errors';
+import { TECHNICAL_ERROR_MESSAGES } from '@/constants/errors';
 import { initializeFirebaseAuth } from './firebase-auth';
 import { firebaseConfig } from './firebaseConfig';
 
@@ -62,10 +62,10 @@ async function requireVerifiedEmail(
 ): Promise<UserCredential> {
   if (!credential.user.emailVerified) {
     await signOut(auth);
-    throw new FirebaseError(
-      APP_ERROR_CODES.emailNotVerified,
-      TECHNICAL_ERROR_MESSAGES.emailNotVerified,
-    );
+    //  throw new FirebaseError(
+    //    APP_ERROR_CODES.emailNotVerified,
+    //    TECHNICAL_ERROR_MESSAGES.emailNotVerified,
+    //  );
   }
 
   return credential;

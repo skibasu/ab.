@@ -8,6 +8,7 @@ export const icons = {
   clear: require('@/assets/svg/clear.svg'),
   close: require('@/assets/svg/close.svg'),
   envelope: require('@/assets/svg/envelope.svg'),
+  emailVerificationAlert: require('@/assets/svg/email-verification-alert.svg'),
   filters: require('@/assets/svg/filters.svg'),
   import: require('@/assets/svg/import.svg'),
   next: require('@/assets/svg/next.svg'),

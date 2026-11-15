@@ -1,17 +1,20 @@
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Controller, useForm } from 'react-hook-form';
-import { Keyboard, View } from 'react-native';
+import { Keyboard, Text, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
 import AppButton from '@/components/ui/AppButton/AppButton';
 import AppInput from '@/components/ui/AppInput/AppInput';
 import { AUTH_FORM_DEFAULT_VALUES } from '@/constants/auth-form-defaults';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { login } from '@/services/firebase';
 import { getAuthErrorMessage } from '@/services/firebase-auth-errors';
+import { router } from 'expo-router';
 import { styles } from './styles';
 import { loginSchema } from './validation/loginSchema';
 
 const Form = () => {
+  const theme = useAppTheme();
+  const localStyles = styles(theme);
   const {
     control,
     handleSubmit,
@@ -25,7 +28,10 @@ const Form = () => {
   });
   const submit = handleSubmit(async ({ email, password }) => {
     Keyboard.dismiss();
-    await login(email, password);
+    const { user } = await login(email, password);
+    if (!user.emailVerified) {
+      router.replace({ pathname: '/email-not-verified', params: { email } });
+    }
   });
 
   const handleLoginPress = () => {
@@ -38,7 +44,7 @@ const Form = () => {
   const authError = errors.root?.auth?.message;
 
   return (
-    <View style={styles.container}>
+    <View style={localStyles.container}>
       <Controller
         control={control}
         name="email"
@@ -76,14 +82,13 @@ const Form = () => {
         )}
       />
       {authError && (
-        <ThemedText
-          type="small"
-          themeColor="error"
+        <Text
+          style={localStyles.error}
           accessibilityRole="alert"
           accessibilityLiveRegion="polite"
         >
           {authError}
-        </ThemedText>
+        </Text>
       )}
       <AppButton
         label="Login"

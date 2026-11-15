@@ -1,9 +1,9 @@
 import { Fragment, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
 import ButtonProvider from '@/components/ui/ButtonProvider/ButtonProvider';
 import { AUTH_PROVIDERS } from '@/constants/auth-providers';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { getAuthErrorMessage } from '@/services/firebase-auth-errors';
 import { signInWithGoogle } from '@/services/google-sign-in';
 import { styles } from './styles';
@@ -13,6 +13,8 @@ type ProviderButtonsListProps = {
 };
 
 const ProviderButtonsList = ({ labelPrefix = 'Login with' }: ProviderButtonsListProps) => {
+  const theme = useAppTheme();
+  const localStyles = styles(theme);
   const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
   const [googleError, setGoogleError] = useState<string>();
 
@@ -29,7 +31,7 @@ const ProviderButtonsList = ({ labelPrefix = 'Login with' }: ProviderButtonsList
   };
 
   return (
-    <View style={styles.container}>
+    <View style={localStyles.container}>
       {AUTH_PROVIDERS.map((provider) => {
         const isGoogle = provider.icon === 'google';
         const isApple = provider.icon === 'apple';
@@ -48,14 +50,13 @@ const ProviderButtonsList = ({ labelPrefix = 'Login with' }: ProviderButtonsList
               }
             />
             {isGoogle && googleError && (
-              <ThemedText
-                type="small"
-                themeColor="error"
+              <Text
+                style={localStyles.error}
                 accessibilityRole="alert"
                 accessibilityLiveRegion="polite"
               >
                 {googleError}
-              </ThemedText>
+              </Text>
             )}
           </Fragment>
         );

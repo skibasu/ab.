@@ -9,16 +9,16 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
 import { STARTUP_ERROR_MESSAGE, TECHNICAL_ERROR_MESSAGES } from '@/constants/errors';
 import { ROOT_STACK_OPTIONS } from '@/constants/navigation';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { getFirebaseAuth } from '@/services/firebase';
 import { useAuthStore } from '@/stores/auth-store';
 import { fontFamilies } from '@/theme/fonts';
+import { styles } from '@/styles/root-layout';
 
 void SplashScreen.preventAutoHideAsync().catch((error: unknown) => {
   console.error(TECHNICAL_ERROR_MESSAGES.preventSplashAutoHideFailed, error);
@@ -32,6 +32,7 @@ function hideSplashScreen() {
 
 export function ErrorBoundary({ error }: ErrorBoundaryProps) {
   const theme = useAppTheme();
+  const localStyles = styles(theme);
 
   useEffect(() => {
     hideSplashScreen();
@@ -39,21 +40,13 @@ export function ErrorBoundary({ error }: ErrorBoundaryProps) {
   }, [error]);
 
   return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: theme.spacing[6],
-        backgroundColor: theme.backgroundColor.default,
-      }}
-    >
-      <ThemedText
+    <View style={localStyles.errorContainer}>
+      <Text
         accessibilityRole="alert"
-        style={{ textAlign: 'center' }}
+        style={localStyles.errorMessage}
       >
         {STARTUP_ERROR_MESSAGE}
-      </ThemedText>
+      </Text>
     </View>
   );
 }

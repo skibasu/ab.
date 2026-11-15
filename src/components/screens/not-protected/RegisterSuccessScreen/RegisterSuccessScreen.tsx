@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
+import ResendVerificationLink from '@/components/auth/ResendVerificationLink/ResendVerificationLink';
 import AppButton from '@/components/ui/AppButton/AppButton';
 import IconBadge from '@/components/ui/IconBadge/IconBadge';
 import Title from '@/components/ui/Title/Title';
@@ -27,32 +27,22 @@ const RegisterSuccessScreen = ({ email }: RegisterSuccessScreenProps) => {
           style={localStyles.title}
         />
         <View style={localStyles.recipient}>
-          <ThemedText
-            themeColor="secondary"
-            style={localStyles.description}
-          >
+          <Text style={localStyles.description}>
             Your account is ready. We sent a verification link to
-          </ThemedText>
-          <ThemedText
+          </Text>
+          <Text
             selectable
             style={localStyles.email}
           >
             {email}
-          </ThemedText>
+          </Text>
         </View>
         <View style={localStyles.instructions}>
-          <ThemedText
-            themeColor="secondary"
-            style={localStyles.instruction}
-          >
-            Open the link, then return here to log in.
-          </ThemedText>
-          <ThemedText
-            themeColor="secondary"
-            style={localStyles.help}
-          >
-            No email? Check your spam or junk folder.
-          </ThemedText>
+          <Text style={localStyles.instruction}>Open the link, then return here to log in.</Text>
+          <View style={localStyles.support}>
+            <Text style={localStyles.help}>No email? Check your spam or junk folder.</Text>
+            <ResendVerificationLink />
+          </View>
         </View>
       </View>
       <View style={localStyles.buttonContainer}>
