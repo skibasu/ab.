@@ -8,16 +8,20 @@ import {
   signInWithCredential,
   signInWithEmailAndPassword,
   signOut,
+  type Auth,
   type UserCredential,
 } from 'firebase/auth';
 
-import { initializeFirebaseAuth } from './firebase-auth.native';
+import { APP_ERROR_CODES, TECHNICAL_ERROR_MESSAGES } from '@/constants/errors';
+import { initializeFirebaseAuth } from './firebase-auth';
 import { firebaseConfig } from './firebaseConfig';
 
-export const firebaseApp = initializeApp(firebaseConfig);
-export const auth = initializeFirebaseAuth(firebaseApp);
-
+let auth: Auth | undefined;
 let registrationAttempt = 0;
+
+export function getFirebaseAuth(): Auth {
+  return (auth ??= initializeFirebaseAuth(initializeApp(firebaseConfig)));
+}
 
 export async function register(email: string, password: string) {
   // Firebase signs in new accounts automatically. Keep that sign-in separate from the app session.
@@ -33,26 +37,40 @@ export async function register(email: string, password: string) {
       return { verificationEmailSent: false };
     }
   } finally {
-    await deleteApp(app);
+    try {
+      await deleteApp(app);
+    } catch (error) {
+      console.error(TECHNICAL_ERROR_MESSAGES.registrationCleanupFailed, error);
+    }
   }
 }
 
 export async function login(email: string, password: string): Promise<UserCredential> {
-  return requireVerifiedEmail(await signInWithEmailAndPassword(auth, email, password));
+  const auth = getFirebaseAuth();
+  return requireVerifiedEmail(auth, await signInWithEmailAndPassword(auth, email, password));
 }
 
 export async function loginWithGoogle(idToken: string): Promise<UserCredential> {
+  const auth = getFirebaseAuth();
   const googleCredential = GoogleAuthProvider.credential(idToken);
-  return requireVerifiedEmail(await signInWithCredential(auth, googleCredential));
+  return requireVerifiedEmail(auth, await signInWithCredential(auth, googleCredential));
 }
 
-async function requireVerifiedEmail(credential: UserCredential): Promise<UserCredential> {
+async function requireVerifiedEmail(
+  auth: Auth,
+  credential: UserCredential,
+): Promise<UserCredential> {
   if (!credential.user.emailVerified) {
     await signOut(auth);
-    throw new FirebaseError('auth/email-not-verified', 'Verify your email before signing in.');
+    throw new FirebaseError(
+      APP_ERROR_CODES.emailNotVerified,
+      TECHNICAL_ERROR_MESSAGES.emailNotVerified,
+    );
   }
 
   return credential;
 }
 
-export const logout = (): Promise<void> => signOut(auth);
+export async function logout(): Promise<void> {
+  await signOut(getFirebaseAuth());
+}

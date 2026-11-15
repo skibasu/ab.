@@ -25,7 +25,7 @@ export default function SettingsScreen() {
       await logout();
       // The Firebase listener clears the store and the protected navigator opens Login.
     } catch (error) {
-      setError(getAuthErrorMessage(error, 'Could not log out. Try again.'));
+      setError(getAuthErrorMessage(error, 'logout'));
       setIsSigningOut(false);
     }
   }

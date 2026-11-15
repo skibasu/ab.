@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import AppButton from '@/components/ui/AppButton/AppButton';
 import AppInput from '@/components/ui/AppInput/AppInput';
 import { AUTH_FORM_DEFAULT_VALUES } from '@/constants/auth-form-defaults';
+import { AUTH_ERROR_MESSAGES } from '@/constants/errors';
 import { register } from '@/services/firebase';
 import { getAuthErrorMessage } from '@/services/firebase-auth-errors';
 import { styles } from './styles';
@@ -25,19 +26,21 @@ const Form = () => {
   });
   const submit = handleSubmit(async ({ email, password }) => {
     Keyboard.dismiss();
-    try {
-      const { verificationEmailSent } = await register(email, password);
-      if (!verificationEmailSent) {
-        setError('root.auth', {
-          message: 'Account created, but the verification email could not be sent.',
-        });
-      }
-    } catch (error) {
+    const { verificationEmailSent } = await register(email, password);
+    if (!verificationEmailSent) {
       setError('root.auth', {
-        message: getAuthErrorMessage(error, 'Could not create your account. Try again.'),
+        message: AUTH_ERROR_MESSAGES.verificationEmailFailed,
       });
     }
   });
+
+  const handleRegisterPress = () => {
+    void submit().catch((error: unknown) => {
+      setError('root.auth', {
+        message: getAuthErrorMessage(error, 'register'),
+      });
+    });
+  };
   const authError = errors.root?.auth?.message;
 
   return (
@@ -102,7 +105,7 @@ const Form = () => {
         label="Create account"
         loading={isSubmitting}
         disabled={isSubmitSuccessful}
-        onPress={() => void submit()}
+        onPress={handleRegisterPress}
       />
     </View>
   );

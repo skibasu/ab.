@@ -25,14 +25,16 @@ const Form = () => {
   });
   const submit = handleSubmit(async ({ email, password }) => {
     Keyboard.dismiss();
-    try {
-      await login(email, password);
-    } catch (error) {
-      setError('root.auth', {
-        message: getAuthErrorMessage(error, 'Could not sign in. Try again.'),
-      });
-    }
+    await login(email, password);
   });
+
+  const handleLoginPress = () => {
+    void submit().catch((error: unknown) => {
+      setError('root.auth', {
+        message: getAuthErrorMessage(error, 'login'),
+      });
+    });
+  };
   const authError = errors.root?.auth?.message;
 
   return (
@@ -86,7 +88,7 @@ const Form = () => {
       <AppButton
         label="Login"
         loading={isSubmitting}
-        onPress={() => void submit()}
+        onPress={handleLoginPress}
       />
     </View>
   );

@@ -1,17 +1,37 @@
 import { FirebaseError } from 'firebase/app';
+import { AuthErrorCodes } from 'firebase/auth';
 
-const messages: Record<string, string> = {
-  'app/google-sign-in-build-required': 'Google Sign-In requires an iOS development build.',
-  'app/google-sign-in-not-configured': 'Google Sign-In is not configured for this build.',
-  'auth/account-exists-with-different-credential': 'Sign in using your original sign-in method.',
-  'auth/email-not-verified': 'Verify your email before signing in.',
-  'auth/invalid-credential': 'Check your email and password and try again.',
-  'auth/user-not-found': 'Check your email and password and try again.',
-  'auth/wrong-password': 'Check your email and password and try again.',
-  'auth/network-request-failed': 'Check your internet connection and try again.',
-  'auth/too-many-requests': 'Too many attempts. Try again later.',
+import {
+  APP_ERROR_CODES,
+  AUTH_ACTION_ERROR_MESSAGES,
+  AUTH_ERROR_MESSAGES,
+} from '@/constants/errors';
+
+const messages: Partial<Record<string, string>> = {
+  [APP_ERROR_CODES.googleSignInBuildRequired]: AUTH_ERROR_MESSAGES.googleSignInBuildRequired,
+  [APP_ERROR_CODES.googleSignInNotConfigured]: AUTH_ERROR_MESSAGES.googleSignInNotConfigured,
+  [APP_ERROR_CODES.emailNotVerified]: AUTH_ERROR_MESSAGES.emailNotVerified,
+  [AuthErrorCodes.NEED_CONFIRMATION]: AUTH_ERROR_MESSAGES.useOriginalSignInMethod,
+  [AuthErrorCodes.NETWORK_REQUEST_FAILED]: AUTH_ERROR_MESSAGES.networkRequestFailed,
+  [AuthErrorCodes.TOO_MANY_ATTEMPTS_TRY_LATER]: AUTH_ERROR_MESSAGES.tooManyRequests,
 };
 
-export function getAuthErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof FirebaseError ? (messages[error.code] ?? fallback) : fallback;
+const emailLoginErrorCodes: ReadonlySet<string> = new Set([
+  AuthErrorCodes.INVALID_LOGIN_CREDENTIALS,
+  AuthErrorCodes.USER_DELETED,
+  AuthErrorCodes.INVALID_PASSWORD,
+]);
+
+export function getAuthErrorMessage(
+  error: unknown,
+  action: keyof typeof AUTH_ACTION_ERROR_MESSAGES,
+): string {
+  const fallback = AUTH_ACTION_ERROR_MESSAGES[action];
+  if (!(error instanceof FirebaseError)) return fallback;
+
+  if (action === 'login' && emailLoginErrorCodes.has(error.code)) {
+    return AUTH_ERROR_MESSAGES.invalidEmailCredentials;
+  }
+
+  return messages[error.code] ?? fallback;
 }

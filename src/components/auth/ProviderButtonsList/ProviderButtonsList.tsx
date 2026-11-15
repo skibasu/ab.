@@ -22,7 +22,7 @@ const ProviderButtonsList = ({ labelPrefix = 'Login with' }: ProviderButtonsList
     try {
       await signInWithGoogle();
     } catch (error) {
-      setGoogleError(getAuthErrorMessage(error, 'Could not sign in with Google. Try again.'));
+      setGoogleError(getAuthErrorMessage(error, 'googleSignIn'));
     } finally {
       setIsGoogleSigningIn(false);
     }
@@ -32,12 +32,16 @@ const ProviderButtonsList = ({ labelPrefix = 'Login with' }: ProviderButtonsList
     <View style={styles.container}>
       {AUTH_PROVIDERS.map((provider) => {
         const isGoogle = provider.icon === 'google';
+        const isApple = provider.icon === 'apple';
+        const isMicrosoft = provider.icon === 'microsoft';
+
+        const isServiceDisabled = (isGoogle && Platform.OS !== 'ios') || isApple || isMicrosoft;
         return (
           <Fragment key={provider.icon}>
             <ButtonProvider
               icon={provider.icon}
               label={`${labelPrefix} ${provider.label}`}
-              disabled={isGoogle && Platform.OS !== 'ios'}
+              disabled={isServiceDisabled}
               loading={isGoogle && isGoogleSigningIn}
               onPress={
                 isGoogle ? handleGoogleSignIn : () => console.log(`${provider.label} login pressed`)
