@@ -1,9 +1,11 @@
 import { deleteApp, FirebaseError, initializeApp } from 'firebase/app';
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   initializeAuth,
   inMemoryPersistence,
   sendEmailVerification,
+  signInWithCredential,
   signInWithEmailAndPassword,
   signOut,
   type UserCredential,
@@ -36,8 +38,15 @@ export async function register(email: string, password: string) {
 }
 
 export async function login(email: string, password: string): Promise<UserCredential> {
-  const credential = await signInWithEmailAndPassword(auth, email, password);
+  return requireVerifiedEmail(await signInWithEmailAndPassword(auth, email, password));
+}
 
+export async function loginWithGoogle(idToken: string): Promise<UserCredential> {
+  const googleCredential = GoogleAuthProvider.credential(idToken);
+  return requireVerifiedEmail(await signInWithCredential(auth, googleCredential));
+}
+
+async function requireVerifiedEmail(credential: UserCredential): Promise<UserCredential> {
   if (!credential.user.emailVerified) {
     await signOut(auth);
     throw new FirebaseError('auth/email-not-verified', 'Verify your email before signing in.');

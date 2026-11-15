@@ -1,6 +1,9 @@
 import { FirebaseError } from 'firebase/app';
 
 const messages: Record<string, string> = {
+  'app/google-sign-in-build-required': 'Google Sign-In requires an iOS development build.',
+  'app/google-sign-in-not-configured': 'Google Sign-In is not configured for this build.',
+  'auth/account-exists-with-different-credential': 'Sign in using your original sign-in method.',
   'auth/email-not-verified': 'Verify your email before signing in.',
   'auth/invalid-credential': 'Check your email and password and try again.',
   'auth/user-not-found': 'Check your email and password and try again.',
