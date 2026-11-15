@@ -1,12 +1,29 @@
+import type { User } from 'firebase/auth';
 import { create } from 'zustand';
 
+export type AuthUser = Pick<User, 'uid' | 'email' | 'displayName' | 'photoURL' | 'emailVerified'>;
+
 type AuthState = {
-  isAuthenticated: boolean;
-  setIsAuthenticated: (isAuthenticated: boolean) => void;
+  user: AuthUser | null;
+  isAuthReady: boolean;
+  setUser: (user: User | null) => void;
 };
 
-// Temporary local state until API integration and server-side authentication are implemented.
+// Firebase persists the session. This store only mirrors the user profile for the UI.
 export const useAuthStore = create<AuthState>()((set) => ({
-  isAuthenticated: false,
-  setIsAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
+  user: null,
+  isAuthReady: false,
+  setUser: (user) =>
+    set({
+      user: user
+        ? {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            emailVerified: user.emailVerified,
+          }
+        : null,
+      isAuthReady: true,
+    }),
 }));
