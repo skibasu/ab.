@@ -29,7 +29,7 @@ const spacing = {
 } as const;
 
 const fontFamily = { sans: 'Inter' } as const;
-const fontWeight = { medium: '500', semibold: '600', bold: '700' } as const;
+const fontWeight = { regular: '400', medium: '500', semibold: '600', bold: '700' } as const;
 
 /** Custom size values preserve the current design; these are not Tailwind defaults. */
 const fontSize = {
@@ -41,6 +41,9 @@ const fontSize = {
   '2xl': 27,
   '3xl': 28,
   '4xl': 36,
+  bodyLarge: 18,
+  bodyEmphasis: 22,
+  helperText: 14,
 } as const;
 
 export const themeConfig = {
@@ -58,7 +61,7 @@ export const themeConfig = {
   fontFamily,
   fontWeight,
   fontSize,
-  lineHeight: { 6: spacing[6] },
+  lineHeight: { 5: spacing[5], 6: spacing[6], 6.5: 26, 7.5: 30 },
   letterSpacing: { normal: 0 },
   width: {
     icon: spacing[4.25],
@@ -109,4 +112,20 @@ export const textStyles = {
     textAlignVertical: 'center',
   },
   headerTitle: textStyle(fontSize['3xl'], fontWeight.bold),
+  bodyLarge: {
+    ...textStyle(fontSize.bodyLarge, fontWeight.regular),
+    lineHeight: themeConfig.lineHeight[6.5],
+  },
+  bodyEmphasis: {
+    ...textStyle(fontSize.bodyEmphasis, fontWeight.semibold),
+    lineHeight: themeConfig.lineHeight[7.5],
+  },
+  body: {
+    ...textStyle(fontSize.base, fontWeight.regular),
+    lineHeight: themeConfig.lineHeight[6],
+  },
+  helperText: {
+    ...textStyle(fontSize.helperText, fontWeight.medium),
+    lineHeight: themeConfig.lineHeight[5],
+  },
 } as const satisfies Record<string, TextStyle>;
