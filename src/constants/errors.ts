@@ -40,4 +40,5 @@ export const TECHNICAL_ERROR_MESSAGES = {
   preventSplashAutoHideFailed: 'Failed to prevent the splash screen from hiding automatically.',
   hideSplashFailed: 'Failed to hide the splash screen.',
   rootLayoutFailed: 'Expo Router root layout failed.',
+  verificationUserMissing: 'this message needs to be created.',
 } as const;
