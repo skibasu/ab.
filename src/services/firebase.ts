@@ -12,9 +12,9 @@ import {
 } from 'firebase/auth';
 
 import { APP_ERROR_CODES, TECHNICAL_ERROR_MESSAGES } from '@/constants/errors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeFirebaseAuth } from './firebase-auth';
 import { firebaseConfig } from './firebaseConfig';
+import { saveVerificationEmailCooldown } from './verification-email-cooldown';
 
 let auth: Auth | undefined;
 
@@ -29,10 +29,12 @@ export async function register(email: string, password: string) {
 
   try {
     await sendEmailVerification(user);
-    return { verificationEmailSent: true };
   } catch {
     return { verificationEmailSent: false };
   }
+
+  await saveVerificationEmailCooldown(user.uid);
+  return { verificationEmailSent: true };
 }
 
 export async function login(email: string, password: string): Promise<UserCredential> {
@@ -55,10 +57,7 @@ export const resendVerificationEmail = async (): Promise<void> => {
     );
   }
   await sendEmailVerification(user);
-  const storageKey = `verificationResendAvailableAt:${user.uid}`;
-
-  const resendAvailableAt = Date.now() + 60_000;
-  await AsyncStorage.setItem(storageKey, String(resendAvailableAt));
+  await saveVerificationEmailCooldown(user.uid);
 };
 
 export async function loginWithGoogle(idToken: string): Promise<UserCredential> {

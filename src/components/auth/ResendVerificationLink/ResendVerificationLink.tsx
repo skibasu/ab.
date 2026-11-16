@@ -2,10 +2,10 @@ import { AUTH_ERROR_MESSAGES } from '@/constants/errors';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { resendVerificationEmail } from '@/services/firebase';
 import { getAuthErrorMessage } from '@/services/firebase-auth-errors';
+import { getVerificationResendAvailableAt } from '@/services/verification-email-cooldown';
 import { useAuthStore } from '@/stores/auth-store';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { styles } from './styles';
 
 const ResendVerificationLink = () => {
@@ -30,10 +30,7 @@ const ResendVerificationLink = () => {
     setIsResending(true);
 
     try {
-      const storageKey = `verificationResendAvailableAt:${user.uid}`;
-      const stored = await AsyncStorage.getItem(storageKey);
-      const timestamp = stored === null ? 0 : Number(stored);
-      const resendAvailableAt = Number.isFinite(timestamp) ? timestamp : 0;
+      const resendAvailableAt = await getVerificationResendAvailableAt(user.uid);
       const secondsLeft = Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000));
 
       if (secondsLeft > 0) {
@@ -55,19 +52,32 @@ const ResendVerificationLink = () => {
       <Pressable
         accessibilityRole="link"
         accessibilityLabel="Resend verification email"
+        accessibilityState={{ disabled: isResending, busy: isResending }}
         style={localStyles.linkContainer}
         onPress={handleLinkPress}
         disabled={isResending}
       >
-        {({ pressed }) => (
-          <Text style={[localStyles.text, pressed && localStyles.pressed]}>
-            Resend verification email
-          </Text>
-        )}
+        {({ pressed }) =>
+          isResending ? (
+            <ActivityIndicator
+              accessible={false}
+              color={theme.textColor.link}
+              size="small"
+            />
+          ) : (
+            <Text style={[localStyles.text, pressed && localStyles.pressed]}>
+              Resend verification email
+            </Text>
+          )
+        }
       </Pressable>
       {resendError && <Text style={localStyles.textError}>{resendError}</Text>}
       {resendSuccess && (
-        <Text style={localStyles.textSuccess}>
+        <Text
+          style={localStyles.textSuccess}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
           Verification email has been resent successfully.
         </Text>
       )}

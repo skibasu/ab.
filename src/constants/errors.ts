@@ -19,7 +19,7 @@ export const AUTH_ERROR_MESSAGES = {
   verificationEmailFailed: 'Account created, but the verification email could not be sent.',
   verificationUserMissing: 'Sign in again to resend the verification email.',
   verificationResendCooldown: (seconds: number) =>
-    `Please wait ${seconds} seconds before requesting another verification email.`,
+    `Please wait ${Math.floor(seconds / 60)} min ${seconds % 60} s before requesting another verification email.`,
 } as const;
 
 export const AUTH_ACTION_ERROR_MESSAGES = {
@@ -47,4 +47,5 @@ export const TECHNICAL_ERROR_MESSAGES = {
   rootLayoutFailed: 'Expo Router root layout failed.',
   verificationUserMissing:
     'An authenticated Firebase user is required to resend the verification email.',
+  verificationCooldownSaveFailed: 'Failed to save the verification email resend cooldown.',
 } as const;

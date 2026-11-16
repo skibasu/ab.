@@ -5,5 +5,6 @@ export const firebaseConfig = {
   storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-  resendedInterval: 5 * 60_000, // 1 minute in milliseconds
 };
+
+export const VERIFICATION_EMAIL_RESEND_INTERVAL_MS = 120_000;

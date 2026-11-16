@@ -14,6 +14,7 @@ export const styles = (theme: AppTheme) =>
     },
     linkContainer: {
       width: '100%',
+      minHeight: theme.height.touchTarget,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -31,8 +32,9 @@ export const styles = (theme: AppTheme) =>
     },
     textSuccess: {
       ...theme.textStyles.link,
-      color: theme.textColor.secondary,
+      color: theme.textColor.success,
       textDecorationLine: 'none',
+      textAlign: 'center',
     },
     pressed: {
       color: theme.textColor.linkPressed,
