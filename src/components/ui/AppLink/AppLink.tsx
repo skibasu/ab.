@@ -30,6 +30,7 @@ const AppLink = ({
   const content = (
     <Pressable
       {...props}
+
       disabled={disabled}
       accessibilityRole="link"
       accessibilityLabel={accessibilityLabel ?? text}

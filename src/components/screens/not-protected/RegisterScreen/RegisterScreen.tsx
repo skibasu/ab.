@@ -1,6 +1,6 @@
 import RegistrationForm from '@/components/screens/not-protected/RegisterScreen/RegistrationForm/RegistrationForm';
 import { styles } from '@/components/screens/not-protected/RegisterScreen/style';
-import AppLink from '@/components/ui/AppLink/AppLink';
+import ActionLink from '@/components/ui/ActionLink/ActionLink';
 import Logo from '@/components/ui/Logo/Logo';
 import MainTitleBlock from '@/components/ui/MainTitleBlock/MainTitleBlock';
 import Subtitle from '@/components/ui/Subtitle/Subtitle';
@@ -34,13 +34,13 @@ const Register = () => {
         <RegistrationForm>
           <View style={localStyles.registerContainer}>
             <Subtitle text="Already have an account?" />
-            <View style={localStyles.registerActions}>
-              <AppLink
-                href="/(auth)/login"
-                text="Sign in"
-              />
+            <ActionLink
+              href="/(auth)/login"
+              text="Sign in"
+              style={localStyles.registerActions}
+            >
               <Subtitle text=" or sign in with:" />
-            </View>
+            </ActionLink>
           </View>
         </RegistrationForm>
       </ScrollView>
