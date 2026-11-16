@@ -11,6 +11,7 @@ const messages: Partial<Record<string, string>> = {
   [APP_ERROR_CODES.googleSignInBuildRequired]: AUTH_ERROR_MESSAGES.googleSignInBuildRequired,
   [APP_ERROR_CODES.googleSignInNotConfigured]: AUTH_ERROR_MESSAGES.googleSignInNotConfigured,
   [APP_ERROR_CODES.emailNotVerified]: AUTH_ERROR_MESSAGES.emailNotVerified,
+  [APP_ERROR_CODES.verificationUserMissing]: AUTH_ERROR_MESSAGES.verificationUserMissing,
   [AuthErrorCodes.NEED_CONFIRMATION]: AUTH_ERROR_MESSAGES.useOriginalSignInMethod,
   [AuthErrorCodes.NETWORK_REQUEST_FAILED]: AUTH_ERROR_MESSAGES.networkRequestFailed,
   [AuthErrorCodes.TOO_MANY_ATTEMPTS_TRY_LATER]: AUTH_ERROR_MESSAGES.tooManyRequests,

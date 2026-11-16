@@ -1,7 +1,8 @@
+import { AUTH_ERROR_MESSAGES } from '@/constants/errors';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { resendVerificationEmail } from '@/services/firebase';
 import { getAuthErrorMessage } from '@/services/firebase-auth-errors';
-import { AuthUser, useAuthStore } from '@/stores/auth-store';
+import { useAuthStore } from '@/stores/auth-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -15,41 +16,37 @@ const ResendVerificationLink = () => {
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
 
-  const handleLinkPress = async (user: AuthUser) => {
+  const handleLinkPress = async () => {
+    if (isResending) return;
+
+    setResendError('');
+    setResendSuccess(false);
+
     if (!user) {
-      setResendError('User is not authenticated. Cannot resend verification email.');
+      setResendError(AUTH_ERROR_MESSAGES.verificationUserMissing);
       return;
     }
-    setResendError(''); // Clear any previous error message
-    setResendSuccess(false); // Clear any previous success message
+
     setIsResending(true);
-    const storageKey = `verificationResendAvailableAt:${user.uid}`;
 
-    const stored = await AsyncStorage.getItem(storageKey);
-    const timestamp = stored === null ? 0 : Number(stored);
+    try {
+      const storageKey = `verificationResendAvailableAt:${user.uid}`;
+      const stored = await AsyncStorage.getItem(storageKey);
+      const timestamp = stored === null ? 0 : Number(stored);
+      const resendAvailableAt = Number.isFinite(timestamp) ? timestamp : 0;
+      const secondsLeft = Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000));
 
-    const resendAvailableAt = Number.isFinite(timestamp) ? timestamp : 0;
-
-    const secondsLeft = Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000));
-
-    if (secondsLeft > 0) {
-      setIsResending(false);
-      setResendError(
-        `Resend verification email is not available yet. Please wait ${secondsLeft} seconds.`,
-      );
-
-      return;
-    } else {
-      try {
-        await resendVerificationEmail();
-        setResendSuccess(true);
-      } catch (error) {
-        //TO DO  add error handling for resend verification email
-        // should be getAuthErrorMessage(error, 'verificationLinkResend') but this error type is not yet implemented in getAuthErrorMessage
-        setResendError(getAuthErrorMessage(error, 'login'));
-      } finally {
-        setIsResending(false);
+      if (secondsLeft > 0) {
+        setResendError(AUTH_ERROR_MESSAGES.verificationResendCooldown(secondsLeft));
+        return;
       }
+
+      await resendVerificationEmail();
+      setResendSuccess(true);
+    } catch (error) {
+      setResendError(getAuthErrorMessage(error, 'verificationLinkResend'));
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -59,7 +56,7 @@ const ResendVerificationLink = () => {
         accessibilityRole="link"
         accessibilityLabel="Resend verification email"
         style={localStyles.linkContainer}
-        onPress={() => user && handleLinkPress(user)}
+        onPress={handleLinkPress}
         disabled={isResending}
       >
         {({ pressed }) => (

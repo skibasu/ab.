@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { FirebaseError, initializeApp } from 'firebase/app';
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
@@ -11,7 +11,7 @@ import {
   type UserCredential,
 } from 'firebase/auth';
 
-import { TECHNICAL_ERROR_MESSAGES } from '@/constants/errors';
+import { APP_ERROR_CODES, TECHNICAL_ERROR_MESSAGES } from '@/constants/errors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeFirebaseAuth } from './firebase-auth';
 import { firebaseConfig } from './firebaseConfig';
@@ -49,7 +49,10 @@ export const resendVerificationEmail = async (): Promise<void> => {
   const user = auth.currentUser;
 
   if (!user) {
-    throw new Error(TECHNICAL_ERROR_MESSAGES.verificationUserMissing);
+    throw new FirebaseError(
+      APP_ERROR_CODES.verificationUserMissing,
+      TECHNICAL_ERROR_MESSAGES.verificationUserMissing,
+    );
   }
   await sendEmailVerification(user);
   const storageKey = `verificationResendAvailableAt:${user.uid}`;
