@@ -1,6 +1,6 @@
 import LoginForm from '@/components/screens/not-protected/LoginScreen/LoginForm/LoginForm';
 import { styles } from '@/components/screens/not-protected/LoginScreen/styles';
-import AppLink from '@/components/ui/AppLink/AppLink';
+import ActionLink from '@/components/ui/ActionLink/ActionLink';
 import Logo from '@/components/ui/Logo/Logo';
 import MainTitleBlock from '@/components/ui/MainTitleBlock/MainTitleBlock';
 import Subtitle from '@/components/ui/Subtitle/Subtitle';
@@ -36,13 +36,13 @@ const Login = () => {
               style={localStyles.loginSubtitle}
               text="New here?"
             />
-            <View style={localStyles.loginActions}>
-              <AppLink
-                href="/(auth)/register"
-                text="Create an account"
-              />
+            <ActionLink
+              href="/(auth)/register"
+              text="Create an account"
+              style={localStyles.loginActions}
+            >
               <Subtitle text=" or continue" />
-            </View>
+            </ActionLink>
           </View>
         </LoginForm>
       </ScrollView>

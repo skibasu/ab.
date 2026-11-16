@@ -9,4 +9,8 @@ export const styles = (theme: AppTheme) =>
       width: '100%',
     },
     error: { ...theme.textStyles.helperText, color: theme.textColor.error },
+    linkContainer: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
   });

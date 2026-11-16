@@ -7,7 +7,7 @@ const RegisterSuccess = () => {
   const { email } = useLocalSearchParams<{ email?: string | string[] }>();
   const recipientEmail = (Array.isArray(email) ? email[0] : email)?.trim();
 
-  if (!recipientEmail) return <Redirect href="/reset-password" />;
+  if (!recipientEmail) return <Redirect href="/register" />;
 
   return (
     <AppSafeArea>

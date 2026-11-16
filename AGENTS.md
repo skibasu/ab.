@@ -39,3 +39,17 @@ Docs: https://docs.expo.dev/eas/index.md
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+
+## Component styles
+
+- Keep each component's styles in its own `styles.ts` file. Always use this filename. A component must not import another component's stylesheet, even when the styles are identical.
+
+## Pending auth work
+
+When asked about pending auth work, remind the user about live email verification updates. Implement this on a separate branch when requested.
+
+- Add a custom Firebase email verification action handler.
+- After successful verification, have a Cloud Function securely identify the account, check its verified status in Firebase Auth with the Admin SDK, and write the status to a user-owned Firestore document.
+- Restrict writes to the verification status to the trusted backend, and allow the user to listen to their own document.
+- Listen to that document in the app with `onSnapshot`, then reload the Firebase user, refresh the ID token as needed, and synchronize Zustand before updating navigation.
+- Support verification on another device without periodic polling. Include retry handling for a successful Auth verification followed by a failed Firestore synchronization.

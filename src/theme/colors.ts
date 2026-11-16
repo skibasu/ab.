@@ -15,6 +15,7 @@ export const colors = {
   indigo: { 400: '#A5B4FC' },
   amber: { 400: '#FFBF47' },
   rose: { 300: '#FF9EAF', 700: '#A82844' },
+  green: { 300: '#86EFAC', 800: '#166534' },
   gray: {
     200: '#C7CAD6',
     300: '#B3ADC4',

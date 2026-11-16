@@ -7,6 +7,7 @@ import { useFormContext } from '@/context/useFormContext';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { login } from '@/services/firebase';
 import { getAuthErrorMessage } from '@/services/firebase-auth-errors';
+import { useAuthStore } from '@/stores/auth-store';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { router } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
@@ -44,6 +45,7 @@ const LoginForm = ({ children }: LoginFormProps) => {
 
   const submitCallback = async (email: string, password: string) => {
     const { user } = await login(email, password);
+    useAuthStore.getState().setUser(user);
     if (!user.emailVerified) {
       router.replace({ pathname: '/email-not-verified', params: { email } });
     }
@@ -115,7 +117,7 @@ const LoginForm = ({ children }: LoginFormProps) => {
       </View>
       {children}
       <ProviderButtonsList disabled={isSubmitting} />
-      <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+      <View style={localStyles.linkContainer}>
         <AppLink
           href="/(auth)/reset-password"
           text="Forgot your password?"
