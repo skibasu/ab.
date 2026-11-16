@@ -1,5 +1,4 @@
-import ProviderButtonsList from '@/components/auth/ProviderButtonsList/ProviderButtonsList';
-import Form from '@/components/screens/not-protected/LoginScreen/Form/Form';
+import LoginForm from '@/components/screens/not-protected/LoginScreen/LoginForm/LoginForm';
 import { styles } from '@/components/screens/not-protected/LoginScreen/styles';
 import AppLink from '@/components/ui/AppLink/AppLink';
 import Logo from '@/components/ui/Logo/Logo';
@@ -31,21 +30,21 @@ const Login = () => {
           title="Sign In"
           subtitle="Bring your books. Find your rhythm."
         />
-        <Form />
-        <View style={localStyles.loginContainer}>
-          <Subtitle
-            style={localStyles.loginSubtitle}
-            text="New here?"
-          />
-          <View style={localStyles.loginActions}>
-            <AppLink
-              href="/(auth)/register"
-              text="Create an account"
+        <LoginForm>
+          <View style={localStyles.loginContainer}>
+            <Subtitle
+              style={localStyles.loginSubtitle}
+              text="New here?"
             />
-            <Subtitle text=" or continue" />
+            <View style={localStyles.loginActions}>
+              <AppLink
+                href="/(auth)/register"
+                text="Create an account"
+              />
+              <Subtitle text=" or continue" />
+            </View>
           </View>
-        </View>
-        <ProviderButtonsList />
+        </LoginForm>
       </ScrollView>
     </KeyboardAvoidingView>
   );

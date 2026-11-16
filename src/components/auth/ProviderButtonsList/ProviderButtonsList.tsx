@@ -3,6 +3,7 @@ import { Platform, Text, View } from 'react-native';
 
 import ButtonProvider from '@/components/ui/ButtonProvider/ButtonProvider';
 import { AUTH_PROVIDERS } from '@/constants/auth-providers';
+import { useFormContext } from '@/context/useFormContext';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { getAuthErrorMessage } from '@/services/firebase-auth-errors';
 import { signInWithGoogle } from '@/services/google-sign-in';
@@ -10,17 +11,23 @@ import { styles } from './styles';
 
 type ProviderButtonsListProps = {
   labelPrefix?: 'Login with' | 'Continue with';
+  disabled: boolean;
 };
 
-const ProviderButtonsList = ({ labelPrefix = 'Login with' }: ProviderButtonsListProps) => {
+const ProviderButtonsList = ({
+  labelPrefix = 'Login with',
+  disabled,
+}: ProviderButtonsListProps) => {
+  const { setIsGoogleSigningIn, isGoogleSigningIn } = useFormContext();
   const theme = useAppTheme();
   const localStyles = styles(theme);
-  const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
+
   const [googleError, setGoogleError] = useState<string>();
 
   const handleGoogleSignIn = async () => {
     setGoogleError(undefined);
     setIsGoogleSigningIn(true);
+
     try {
       await signInWithGoogle();
     } catch (error) {
@@ -37,7 +44,8 @@ const ProviderButtonsList = ({ labelPrefix = 'Login with' }: ProviderButtonsList
         const isApple = provider.icon === 'apple';
         const isMicrosoft = provider.icon === 'microsoft';
 
-        const isServiceDisabled = (isGoogle && Platform.OS !== 'ios') || isApple || isMicrosoft;
+        const isServiceDisabled =
+          (isGoogle && Platform.OS !== 'ios') || isApple || isMicrosoft || disabled;
         return (
           <Fragment key={provider.icon}>
             <ButtonProvider

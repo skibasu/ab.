@@ -14,6 +14,7 @@ const messages: Partial<Record<string, string>> = {
   [AuthErrorCodes.NEED_CONFIRMATION]: AUTH_ERROR_MESSAGES.useOriginalSignInMethod,
   [AuthErrorCodes.NETWORK_REQUEST_FAILED]: AUTH_ERROR_MESSAGES.networkRequestFailed,
   [AuthErrorCodes.TOO_MANY_ATTEMPTS_TRY_LATER]: AUTH_ERROR_MESSAGES.tooManyRequests,
+  [AuthErrorCodes.EMAIL_EXISTS]: AUTH_ERROR_MESSAGES.emailAlreadyInUse,
 };
 
 const emailLoginErrorCodes: ReadonlySet<string> = new Set([

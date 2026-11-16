@@ -1,5 +1,4 @@
-import ProviderButtonsList from '@/components/auth/ProviderButtonsList/ProviderButtonsList';
-import Form from '@/components/screens/not-protected/RegisterScreen/Form/Form';
+import RegistrationForm from '@/components/screens/not-protected/RegisterScreen/RegistrationForm/RegistrationForm';
 import { styles } from '@/components/screens/not-protected/RegisterScreen/style';
 import AppLink from '@/components/ui/AppLink/AppLink';
 import Logo from '@/components/ui/Logo/Logo';
@@ -32,18 +31,18 @@ const Register = () => {
           title="Create account"
           subtitle="Create an account for your audiobooks."
         />
-        <Form />
-        <View style={localStyles.registerContainer}>
-          <Subtitle text="Already have an account?" />
-          <View style={localStyles.registerActions}>
-            <AppLink
-              href="/(auth)/login"
-              text="Sign in"
-            />
-            <Subtitle text=" or sign in with:" />
+        <RegistrationForm>
+          <View style={localStyles.registerContainer}>
+            <Subtitle text="Already have an account?" />
+            <View style={localStyles.registerActions}>
+              <AppLink
+                href="/(auth)/login"
+                text="Sign in"
+              />
+              <Subtitle text=" or sign in with:" />
+            </View>
           </View>
-        </View>
-        <ProviderButtonsList labelPrefix="Continue with" />
+        </RegistrationForm>
       </ScrollView>
     </KeyboardAvoidingView>
   );
