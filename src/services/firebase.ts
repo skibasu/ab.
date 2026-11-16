@@ -5,6 +5,7 @@ import {
   initializeAuth,
   inMemoryPersistence,
   sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithCredential,
   signInWithEmailAndPassword,
   signOut,
@@ -49,6 +50,10 @@ export async function login(email: string, password: string): Promise<UserCreden
   const auth = getFirebaseAuth();
   return requireVerifiedEmail(auth, await signInWithEmailAndPassword(auth, email, password));
 }
+export const resetPassword = async (email: string): Promise<void> => {
+  const auth = getFirebaseAuth();
+  await sendPasswordResetEmail(auth, email);
+};
 
 export async function loginWithGoogle(idToken: string): Promise<UserCredential> {
   const auth = getFirebaseAuth();

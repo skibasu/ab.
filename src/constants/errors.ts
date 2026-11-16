@@ -23,6 +23,7 @@ export const AUTH_ACTION_ERROR_MESSAGES = {
   googleSignIn: 'Could not sign in with Google. Try again.',
   register: 'Could not create your account. Try again.',
   logout: 'Could not log out. Try again.',
+  reset: 'Could not reset your password. Try again.',
 } as const;
 
 export const STARTUP_ERROR_MESSAGE = 'Could not start the app. Reopen it and try again.';

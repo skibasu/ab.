@@ -1,6 +1,7 @@
 import ProviderButtonsList from '@/components/auth/ProviderButtonsList/ProviderButtonsList';
 import AppButton from '@/components/ui/AppButton/AppButton';
 import AppInput from '@/components/ui/AppInput/AppInput';
+import AppLink from '@/components/ui/AppLink/AppLink';
 import { AUTH_FORM_DEFAULT_VALUES } from '@/constants/auth-form-defaults';
 import { useFormContext } from '@/context/useFormContext';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -114,6 +115,12 @@ const LoginForm = ({ children }: LoginFormProps) => {
       </View>
       {children}
       <ProviderButtonsList disabled={isSubmitting} />
+      <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+        <AppLink
+          href="/(auth)/reset-password"
+          text="Forgot your password?"
+        />
+      </View>
     </>
   );
 };
