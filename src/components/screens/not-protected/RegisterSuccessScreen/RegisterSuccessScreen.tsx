@@ -6,7 +6,7 @@ import AppButton from '@/components/ui/AppButton/AppButton';
 import IconBadge from '@/components/ui/IconBadge/IconBadge';
 import Title from '@/components/ui/Title/Title';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { styles } from './style';
+import { styles } from './styles';
 
 type RegisterSuccessScreenProps = { email: string };
 

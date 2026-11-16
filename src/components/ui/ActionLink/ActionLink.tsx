@@ -3,7 +3,6 @@ import type { ReactNode } from 'react';
 import { Pressable, Text } from 'react-native';
 
 import type { AppLinkProps } from '@/components/ui/AppLink/AppLink';
-import { styles as linkStyles } from '@/components/ui/AppLink/styles';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { styles } from './styles';
 
@@ -28,7 +27,6 @@ const ActionLink = ({
 }: ActionLinkProps) => {
   const theme = useAppTheme();
   const localStyles = styles(theme);
-  const localLinkStyles = linkStyles(theme);
 
   const content = (
     <Pressable
@@ -47,10 +45,10 @@ const ActionLink = ({
         >
           <Text
             style={[
-              localLinkStyles.text,
+              localStyles.text,
               textStyle,
-              pressed && localLinkStyles.pressed,
-              disabled && localLinkStyles.disabled,
+              pressed && localStyles.pressed,
+              disabled && localStyles.disabled,
             ]}
           >
             {text}

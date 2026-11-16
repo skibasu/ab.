@@ -1,5 +1,5 @@
 import ResetForm from '@/components/screens/not-protected/ResetPasswordScreen/ResetPasswordForm/ResetPasswordForm';
-import { styles } from './style';
+import { styles } from './styles';
 
 import Logo from '@/components/ui/Logo/Logo';
 import MainTitleBlock from '@/components/ui/MainTitleBlock/MainTitleBlock';

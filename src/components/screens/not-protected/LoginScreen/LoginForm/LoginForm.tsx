@@ -117,7 +117,7 @@ const LoginForm = ({ children }: LoginFormProps) => {
       </View>
       {children}
       <ProviderButtonsList disabled={isSubmitting} />
-      <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+      <View style={localStyles.linkContainer}>
         <AppLink
           href="/(auth)/reset-password"
           text="Forgot your password?"

@@ -1,5 +1,5 @@
 import RegistrationForm from '@/components/screens/not-protected/RegisterScreen/RegistrationForm/RegistrationForm';
-import { styles } from '@/components/screens/not-protected/RegisterScreen/style';
+import { styles } from '@/components/screens/not-protected/RegisterScreen/styles';
 import ActionLink from '@/components/ui/ActionLink/ActionLink';
 import Logo from '@/components/ui/Logo/Logo';
 import MainTitleBlock from '@/components/ui/MainTitleBlock/MainTitleBlock';

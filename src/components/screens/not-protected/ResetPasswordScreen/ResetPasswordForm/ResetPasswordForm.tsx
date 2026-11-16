@@ -83,7 +83,7 @@ const LoginForm = ({ children }: LoginFormProps) => {
         />
       </View>
       {children}
-      <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+      <View style={localStyles.linkContainer}>
         <AppLink
           href="/(auth)/login"
           text="Back to Login page"
