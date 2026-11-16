@@ -12,9 +12,9 @@ import {
 } from 'firebase/auth';
 
 import { APP_ERROR_CODES, TECHNICAL_ERROR_MESSAGES } from '@/constants/errors';
+import { getEmailResendAvailableAt, saveEmailCooldown } from './email-cooldown';
 import { initializeFirebaseAuth } from './firebase-auth';
 import { firebaseConfig } from './firebaseConfig';
-import { saveVerificationEmailCooldown } from './verification-email-cooldown';
 
 let auth: Auth | undefined;
 
@@ -33,7 +33,7 @@ export async function register(email: string, password: string) {
     return { verificationEmailSent: false };
   }
 
-  await saveVerificationEmailCooldown(user.uid);
+  await saveEmailCooldown('verification', user.uid);
   return { verificationEmailSent: true };
 }
 
@@ -43,7 +43,19 @@ export async function login(email: string, password: string): Promise<UserCreden
 }
 export const resetPassword = async (email: string): Promise<void> => {
   const auth = getFirebaseAuth();
+  const resendAvailableAt = await getEmailResendAvailableAt('passwordReset', email);
+  const secondsLeft = Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000));
+
+  if (secondsLeft > 0) {
+    throw new FirebaseError(
+      APP_ERROR_CODES.passwordResetCooldown,
+      TECHNICAL_ERROR_MESSAGES.passwordResetCooldown,
+      { secondsLeft },
+    );
+  }
+
   await sendPasswordResetEmail(auth, email);
+  await saveEmailCooldown('passwordReset', email);
 };
 
 export const resendVerificationEmail = async (): Promise<void> => {
@@ -57,7 +69,7 @@ export const resendVerificationEmail = async (): Promise<void> => {
     );
   }
   await sendEmailVerification(user);
-  await saveVerificationEmailCooldown(user.uid);
+  await saveEmailCooldown('verification', user.uid);
 };
 
 export async function loginWithGoogle(idToken: string): Promise<UserCredential> {

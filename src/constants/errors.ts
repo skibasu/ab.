@@ -5,6 +5,7 @@ export const APP_ERROR_CODES = {
   googleSignInNotConfigured: 'app/google-sign-in-not-configured',
   googleSignInNoToken: 'app/google-sign-in-no-token',
   verificationUserMissing: 'app/verification-user-missing',
+  passwordResetCooldown: 'app/password-reset-cooldown',
 } as const;
 
 export const AUTH_ERROR_MESSAGES = {
@@ -20,6 +21,8 @@ export const AUTH_ERROR_MESSAGES = {
   verificationUserMissing: 'Sign in again to resend the verification email.',
   verificationResendCooldown: (seconds: number) =>
     `Please wait ${Math.floor(seconds / 60)} min ${seconds % 60} s before requesting another verification email.`,
+  passwordResetCooldown: (seconds: number) =>
+    `Please wait ${Math.floor(seconds / 60)} min ${seconds % 60} s before requesting another password reset email.`,
 } as const;
 
 export const AUTH_ACTION_ERROR_MESSAGES = {
@@ -47,5 +50,6 @@ export const TECHNICAL_ERROR_MESSAGES = {
   rootLayoutFailed: 'Expo Router root layout failed.',
   verificationUserMissing:
     'An authenticated Firebase user is required to resend the verification email.',
-  verificationCooldownSaveFailed: 'Failed to save the verification email resend cooldown.',
+  emailCooldownSaveFailed: 'Failed to save the email resend cooldown.',
+  passwordResetCooldown: 'The password reset email cooldown is still active.',
 } as const;

@@ -1,8 +1,8 @@
 import { AUTH_ERROR_MESSAGES } from '@/constants/errors';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { getEmailResendAvailableAt } from '@/services/email-cooldown';
 import { resendVerificationEmail } from '@/services/firebase';
 import { getAuthErrorMessage } from '@/services/firebase-auth-errors';
-import { getVerificationResendAvailableAt } from '@/services/verification-email-cooldown';
 import { useAuthStore } from '@/stores/auth-store';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
@@ -30,7 +30,7 @@ const ResendVerificationLink = () => {
     setIsResending(true);
 
     try {
-      const resendAvailableAt = await getVerificationResendAvailableAt(user.uid);
+      const resendAvailableAt = await getEmailResendAvailableAt('verification', user.uid);
       const secondsLeft = Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000));
 
       if (secondsLeft > 0) {

@@ -11,10 +11,6 @@ import { Controller, useForm } from 'react-hook-form';
 import { Keyboard, Text, View } from 'react-native';
 import { styles } from './styles';
 import { resetSchema } from './validation/resetSchema';
-export type FormArgs = [email: string];
-
-export type AsyncCallback = (...args: FormArgs) => Promise<void>;
-
 type LoginFormProps = {
   children?: React.ReactNode;
 };
@@ -33,19 +29,16 @@ const LoginForm = ({ children }: LoginFormProps) => {
     mode: 'onChange',
     reValidateMode: 'onChange',
   });
-  const submitForm = async (callback: AsyncCallback): Promise<void> =>
-    handleSubmit(async ({ email }) => {
-      Keyboard.dismiss();
-      await callback(email);
-    })();
-
-  const submitCallback = async (email: string) => {
+  const submit = handleSubmit(async ({ email }) => {
+    Keyboard.dismiss();
     await resetPassword(email);
     router.push({ pathname: '/reset-success', params: { email } });
-  };
+  });
 
   const handleResetPress = () => {
-    void submitForm(submitCallback).catch((error: unknown) => {
+    if (isSubmitting) return;
+
+    void submit().catch((error: unknown) => {
       setError('root.auth', {
         message: getAuthErrorMessage(error, 'reset'),
       });
@@ -74,7 +67,6 @@ const LoginForm = ({ children }: LoginFormProps) => {
             />
           )}
         />
-
         {authError && (
           <Text
             style={localStyles.error}

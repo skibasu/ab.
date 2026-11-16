@@ -7,4 +7,4 @@ export const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-export const VERIFICATION_EMAIL_RESEND_INTERVAL_MS = 120_000;
+export const EMAIL_RESEND_INTERVAL_MS = 120_000;

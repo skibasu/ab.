@@ -31,6 +31,13 @@ export function getAuthErrorMessage(
   const fallback = AUTH_ACTION_ERROR_MESSAGES[action];
   if (!(error instanceof FirebaseError)) return fallback;
 
+  if (
+    error.code === APP_ERROR_CODES.passwordResetCooldown &&
+    typeof error.customData?.secondsLeft === 'number'
+  ) {
+    return AUTH_ERROR_MESSAGES.passwordResetCooldown(error.customData.secondsLeft);
+  }
+
   if (action === 'login' && emailLoginErrorCodes.has(error.code)) {
     return AUTH_ERROR_MESSAGES.invalidEmailCredentials;
   }
