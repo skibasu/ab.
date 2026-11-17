@@ -33,6 +33,7 @@ const HomeScreen = () => {
               const files = await pickBookFiles('audio/mpeg');
 
               if (files.length === 0) return;
+
               const filesWithMetadata = await readBookFilesMetadata(files);
               const groupedFiles = groupFiles(filesWithMetadata);
               console.log('Selected audio files:', files);
