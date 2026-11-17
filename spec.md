@@ -19,6 +19,10 @@ Obecny etap obejmuje logikę importu MP3/ZIP i lokalnej biblioteki. Budowanie in
 
 ## Ustalone wymagania
 
+### Język kodu
+
+- Cały nowy i modyfikowany kod zapisujemy po angielsku. Nie dodajemy polskich tekstów w kodzie: dotyczy to nazw zmiennych i funkcji, komentarzy, logów konsoli, komunikatów błędów oraz tekstów interfejsu.
+
 ### Platforma i źródła
 
 - Pierwsze wdrożenie importu dotyczy iPhone'a.

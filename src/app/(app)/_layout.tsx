@@ -1,9 +1,11 @@
-import { Stack } from 'expo-router';
-
 import Header from '@/components/global/Header/Header';
 import { APP_HEADERS } from '@/constants/navigation';
+import { useLibraryInitialization } from '@/hooks/use-library-initialization';
+import { Stack } from 'expo-router';
 
 export default function AppLayout() {
+  useLibraryInitialization();
+
   return (
     <Stack>
       <Stack.Screen
