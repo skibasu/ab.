@@ -69,4 +69,7 @@ export const LIBRARY_ERROR_MESSAGES = {
   invalidUserId: 'A valid user ID is required to save book files.',
   emptyBook: 'A book must contain at least one audio file.',
   saveAndCleanupFailed: 'Failed to save book files and clean up the new directory.',
+  unsupportedDatabaseVersion: 'Could not read a supported library database schema version.',
+  databaseSaveAndCleanupFailed:
+    'Failed to save the book to the database and remove its new directory.',
 } as const;

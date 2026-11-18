@@ -13,6 +13,7 @@ export const LOG_MESSAGES = {
   },
   library: {
     initializationFailed: 'Failed to initialize the library:',
+    booksLoadFailed: 'Failed to load books from the local library:',
   },
   bookImport: {
     filesSelected: 'Selected audio files:',
@@ -23,7 +24,8 @@ export const LOG_MESSAGES = {
     fileCopySkipped: 'Skipped an audio file because it could not be copied:',
     coverSkipped: 'Skipped an embedded cover because it could not be saved:',
     emptyBookSkipped: 'Skipped a book because no audio files could be saved:',
-    bookSaved: 'Saved book files:',
+    bookSaved: 'Saved the book to the local library:',
+    bookSaveFailed: 'Failed to save a book to the local library:',
   },
   audio: {
     metadataRead: (filename: string) => `[${filename}] Metadata:`,

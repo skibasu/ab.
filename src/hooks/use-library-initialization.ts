@@ -3,9 +3,11 @@ import { LOG_MESSAGES } from '@/constants/log-messages';
 
 import { initializeLibrary } from '@/services/library-storage';
 import { useAuthStore } from '@/stores/auth-store';
+import { useLibraryStore } from '@/stores/library-store';
 
 export function useLibraryInitialization(): void {
   const userId = useAuthStore((state) => state.user?.uid);
+  const fetchBooks = useLibraryStore((state) => state.fetchBooks);
 
   useEffect(() => {
     if (!userId) return;
@@ -15,5 +17,7 @@ export function useLibraryInitialization(): void {
     } catch (error) {
       console.error(LOG_MESSAGES.library.initializationFailed, error);
     }
-  }, [userId]);
+
+    void fetchBooks(userId);
+  }, [fetchBooks, userId]);
 }
