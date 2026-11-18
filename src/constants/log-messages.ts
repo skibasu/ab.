@@ -14,6 +14,7 @@ export const LOG_MESSAGES = {
   library: {
     initializationFailed: 'Failed to initialize the library:',
     booksLoadFailed: 'Failed to load books from the local library:',
+    testResetFailed: 'Failed to clear the test library:',
   },
   bookImport: {
     filesSelected: 'Selected audio files:',
@@ -22,7 +23,10 @@ export const LOG_MESSAGES = {
     preparationFailed: 'Failed to prepare selected audio files:',
     fileMetadataSkipped: 'Skipped an audio file because metadata could not be read:',
     fileCopySkipped: 'Skipped an audio file because it could not be copied:',
+    fileComparisonSkipped: 'Skipped an audio file because it could not be checked for duplicates:',
     coverSkipped: 'Skipped an embedded cover because it could not be saved:',
+    remoteCoverSkipped: 'Skipped an Open Library cover because it could not be fetched or saved:',
+    remoteCoverCleanupFailed: 'Failed to remove a partial Open Library cover:',
     emptyBookSkipped: 'Skipped a book because no audio files could be saved:',
     bookSaved: 'Saved the book to the local library:',
     bookSaveFailed: 'Failed to save a book to the local library:',

@@ -66,10 +66,13 @@ export const AUDIO_ERROR_MESSAGES = {
 
 /** Technical errors raised while preparing or writing the local book library. */
 export const LIBRARY_ERROR_MESSAGES = {
+  operationInProgress: 'Wait for the current library operation to finish and try again.',
+  testResetFailed: 'Could not clear the test library. Try again.',
   invalidUserId: 'A valid user ID is required to save book files.',
   emptyBook: 'A book must contain at least one audio file.',
-  saveAndCleanupFailed: 'Failed to save book files and clean up the new directory.',
+  bookUnavailable: 'The book is no longer available in the local library.',
+  trackDestinationExists: 'The generated audio file already exists.',
+  saveAndCleanupFailed: 'Failed to save book files and clean up the new files.',
   unsupportedDatabaseVersion: 'Could not read a supported library database schema version.',
-  databaseSaveAndCleanupFailed:
-    'Failed to save the book to the database and remove its new directory.',
+  databaseSaveAndCleanupFailed: 'Failed to save the book to the database and remove its new files.',
 } as const;

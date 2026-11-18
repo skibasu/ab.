@@ -43,13 +43,17 @@ const COVER_EXTENSIONS: Record<string, string> = {
   'image/tiff': 'tiff',
 };
 
+export function getLibraryRoot(): Directory {
+  return new Directory(Paths.document, 'library');
+}
+
 /**
  * Ensures Documents/library/<userId>/books exists in the app's local storage.
  * Safe to call on every login or before import; existing files remain untouched.
  * Returns a directory reference for later book storage operations.
  */
 export function initializeLibrary(userId: string): Directory {
-  const library = new Directory(Paths.document, 'library', userId, 'books');
+  const library = new Directory(getLibraryRoot(), userId, 'books');
 
   library.create({
     idempotent: true,
@@ -60,7 +64,7 @@ export function initializeLibrary(userId: string): Directory {
 }
 
 /**
- * Copies one grouped book into a new UUID directory and saves its first available cover.
+ * Copies a grouped book into its directory. An append keeps the existing cover.
  * Source files remain in cache. Relative paths are based on Paths.document.
  * Skips failed MP3 copies and a failed cover write; source files stay untouched.
  * Returns null and removes the new directory if no audio files could be saved.
@@ -70,6 +74,7 @@ export function initializeLibrary(userId: string): Directory {
 export async function saveBookFiles(
   userId: string,
   book: BookToSave,
+  existingBookId?: string,
 ): Promise<SavedBookFiles | null> {
   if (!userId || userId === '.' || userId === '..' || /[/\\]/.test(userId)) {
     throw new Error(LIBRARY_ERROR_MESSAGES.invalidUserId);
@@ -79,12 +84,13 @@ export async function saveBookFiles(
   }
 
   const library = initializeLibrary(userId);
-  const bookId = randomUUID();
+  const bookId = existingBookId ?? randomUUID();
   const relativePath = `library/${userId}/books/${bookId}`;
   const bookDirectory = new Directory(library, bookId);
 
   // Fail on a collision before entering rollback, so an existing directory is never deleted.
-  bookDirectory.create();
+  bookDirectory.create(existingBookId ? { idempotent: true } : undefined);
+  const newFiles: File[] = [];
 
   try {
     const files: SavedBookFile[] = [];
@@ -96,6 +102,8 @@ export async function saveBookFiles(
       const id = randomUUID();
       const filename = `${id}.mp3`;
       const destination = new File(bookDirectory, filename);
+      if (destination.exists) throw new Error(LIBRARY_ERROR_MESSAGES.trackDestinationExists);
+      newFiles.push(destination);
       try {
         await new File(sourceFile.uri).copy(destination);
       } catch (error) {
@@ -125,7 +133,7 @@ export async function saveBookFiles(
     }
 
     if (files.length === 0) {
-      bookDirectory.delete();
+      if (!existingBookId) bookDirectory.delete();
       console.warn(LOG_MESSAGES.bookImport.emptyBookSkipped, { title: book.title, skippedFiles });
       return null;
     }
@@ -134,7 +142,7 @@ export async function saveBookFiles(
     let coverRelativePath: string | null = null;
     let coverMimeType: string | null = null;
 
-    if (cover) {
+    if (cover && !existingBookId) {
       const extension = COVER_EXTENSIONS[cover.format];
       // Preserve unfamiliar image formats as raw bytes without assigning a wrong extension.
       const filename = extension ? `cover.${extension}` : 'cover';
@@ -166,7 +174,9 @@ export async function saveBookFiles(
     };
   } catch (error) {
     try {
-      if (bookDirectory.exists) bookDirectory.delete();
+      if (existingBookId) {
+        for (const file of newFiles) if (file.exists) file.delete();
+      } else if (bookDirectory.exists) bookDirectory.delete();
     } catch (cleanupError) {
       throw new AggregateError([error, cleanupError], LIBRARY_ERROR_MESSAGES.saveAndCleanupFailed);
     }

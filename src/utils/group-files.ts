@@ -1,3 +1,5 @@
+import { stripPolishDiacritics } from './strip-polish-diacritics';
+
 export type AudioFile = {
   uri: string;
   album?: string;
@@ -5,16 +7,23 @@ export type AudioFile = {
   artist?: string;
 };
 
+export function bookGroupKey(title: string, author: string): string {
+  const normalize = (value: string) =>
+    stripPolishDiacritics(value.normalize('NFKC')).trim().replace(/\s+/g, ' ').toLowerCase();
+  return JSON.stringify([normalize(title), normalize(author)]);
+}
+
 export function groupFiles<T extends AudioFile>(files: T[]) {
+  const unknown = 'Unknown';
   const groups = new Map<string, { title: string; author: string; files: T[] }>();
 
   for (const file of files) {
-    const title = file.album || 'Unknown';
-    const author = file.albumArtist || file.artist || 'Unknown';
+    const album = file.album?.trim();
+    const title = album && album.toLowerCase() !== unknown.toLowerCase() ? album : unknown;
+    const author =
+      title === unknown ? unknown : file.albumArtist?.trim() || file.artist?.trim() || unknown;
 
-    const key = file.album
-      ? JSON.stringify(['book', title, author])
-      : JSON.stringify(['file', file.uri]);
+    const key = bookGroupKey(title, author);
 
     const existingBook = groups.get(key);
 

@@ -61,9 +61,10 @@ Obecny etap obejmuje logikę importu MP3/ZIP i lokalnej biblioteki. Budowanie in
 - Jeden ZIP może zawierać kilka książek. Pliki z podkatalogów podlegają tym samym regułom grupowania według tagów; nazwa ZIP ani podkatalogu nie jest kluczem książki.
 - Odczyt okładki osadzonej w pliku jest w zakresie. Wyszukiwanie okładek w internecie nie jest zatwierdzone; na obecnym etapie korzystamy z tagów.
 - Przy braku metadanych stosujemy `Unknown`, bez odgadywania albumu, autora czy tytułu z nazwy pliku, ZIP lub katalogu. Zakładamy, że użytkownicy importują przygotowane pliki z tagami.
-- Każdy plik bez tagu album tworzy osobną książkę o tytule `Unknown`. Wartość zastępcza nie jest wspólnym kluczem grupowania: takich książek nie łączymy ze sobą ani przy kolejnych importach.
+- Wszystkie pliki bez znanego albumu trafiają do jednej książki i jednego katalogu `Unknown` na konto, niezależnie od tagu autora. Obejmuje to brak tagu, pusty tag i wartość `Unknown`. Autor tej grupy to `Unknown`.
 - Gdy album występuje, lecz brakuje autora, stosujemy autora `Unknown` i grupujemy według albumu i tej wartości zastępczej.
-- Jeśli książka o tym samym albumie i autorze istnieje już w bibliotece aktualnego konta, anulujemy cały import. Nie dołączamy części, nie zastępujemy książki i nie tworzymy jej kopii. Ta zasada zastępuje wcześniejsze ustalenie o dołączaniu części.
+- Jeśli książka o tym samym albumie i autorze istnieje już na danym koncie, dopisujemy tylko nieobecne MP3 do jej katalogu. Identyczność plików sprawdzamy po ich zawartości. Porównanie albumu i autora pomija różnice w wielkości liter i odstępach. Nowe części dopisujemy po istniejących, a łączny czas przeliczamy.
+- Przy porównywaniu metadanych, sortowaniu nazw plików i zapytaniach do Open Library zamieniamy polskie znaki na odpowiedniki bez znaków diakrytycznych. Zapisane i wyświetlane metadane zachowują oryginalną pisownię.
 - Odrzucenie importu nie modyfikuje żadnej istniejącej książki. Dotyczy to również importu kilku książek, gdy tylko jedna z nich już istnieje.
 - Priorytet okładek przy wielu osadzonych obrazach i normalizacja wartości tagów wymagają doprecyzowania. Brak okładki nie jest wartością tekstową `Unknown`; biblioteka zapisuje brak obrazu.
 - Nie dodajemy formularza edycji danych na obecnym etapie bez osobnego ustalenia.
@@ -105,7 +106,7 @@ Obecny etap obejmuje logikę importu MP3/ZIP i lokalnej biblioteki. Budowanie in
 3. Aplikacja sprawdza wybrane typy, rozmiary, liczbę plików i dostępne miejsce.
 4. Dla ZIP sprawdza zawartość i limity rozpakowania; dla MP3 przygotowuje kopiowanie.
 5. Kopiuje lub rozpakowuje audio do katalogu roboczego aplikacji, udostępniając aktualny etap dla przyszłego interfejsu.
-6. Odczytuje tagi i osadzone okładki, pomija pliki z błędem odczytu i grupuje pozostałe części w książki według albumu i autora. Przy brakujących danych stosuje `Unknown`; każdy plik bez albumu tworzy osobną książkę. Jeśli rozpozna książkę istniejącą już w bibliotece konta, anuluje cały import i sprząta jego pliki robocze.
+6. Odczytuje tagi i osadzone okładki, pomija pliki z błędem odczytu i grupuje pozostałe części w książki według albumu i autora. Wszystkie pliki bez znanego albumu trafiają do książki `Unknown`. Dla książki już istniejącej na koncie pomija identyczne pliki i dopisuje pozostałe części.
 7. Po przygotowaniu plików oraz ponownym sprawdzeniu konta i braku istniejących książek zapisuje poprawne części. Błąd kopiowania MP3 pomija ten plik; książka bez żadnej zapisanej części zostaje pominięta.
 8. Sprząta dane robocze i pokazuje książkę w bibliotece.
 
@@ -138,7 +139,6 @@ Powyższy przebieg opisuje docelowe użycie logiki. W obecnym etapie stan, post�
 ### Organizacja książek
 
 - Jak normalizujemy tagi (spacje, wielkość liter) i wybieramy okładkę, gdy pliki tej samej książki zawierają różne obrazy?
-- Ponowny import książki z albumem jest odrzucany według albumu i autora; nie wymaga ustalania duplikatów jej części. Czy potrzebne jest dodatkowe wykrywanie identycznych plików bez albumu, które standardowo tworzą osobne książki `Unknown`?
 
 ### Ograniczenia i obsługa
 
@@ -153,7 +153,7 @@ Powyższy przebieg opisuje docelowe użycie logiki. W obecnym etapie stan, post�
 - Wylogowanie zachowuje lokalną bibliotekę konta. Konto B nie widzi książek konta A; ponowne zalogowanie na konto A przywraca dostęp do jego biblioteki.
 - Import nie zmienia i nie usuwa oryginałów użytkownika.
 - Tagi są odczytywane już w pierwszej wersji; grupowanie i kolejność części odpowiadają zatwierdzonym regułom, a osadzona okładka zostaje zachowana w lokalnej bibliotece.
-- Pliki bez albumu tworzą osobne książki `Unknown`. Wykrycie istniejącej książki według albumu i autora anuluje cały import bez zmian w bibliotece.
+- Pliki bez znanego albumu tworzą jedną książkę `Unknown` na konto. Ponowny import dowolnej książki dopisuje wyłącznie pliki, których zawartości jeszcze nie ma w jej katalogu.
 - Błąd pojedynczego MP3 nie usuwa poprawnie zapisanych części ani innych książek. Książka bez poprawnie zapisanych części jest pomijana, a jej katalog usuwany. Zmiana konta nadal anuluje import zgodnie z zasadą izolacji kont.
 - Usunięcie książki usuwa jej lokalne audio, okładkę i metadane, nie zmieniając książek innych kont ani źródłowych plików użytkownika.
 - Zmiana limitów wymaga edycji jednego pliku konfiguracyjnego; poszczególne moduły nie powielają wartości limitów.

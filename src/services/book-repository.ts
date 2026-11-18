@@ -2,6 +2,7 @@ import { withLibraryDatabase } from './library-database';
 import type { SavedBookFiles } from './library-storage';
 import { DEFAULT_BOOK_COVER_PATH } from '@/constants/book-cover';
 import { LIBRARY_ERROR_MESSAGES } from '@/constants/errors';
+import { stripPolishDiacritics } from '@/utils/strip-polish-diacritics';
 
 export type LibraryBook = {
   id: string;
@@ -25,8 +26,8 @@ export type LibraryBookWithTracks = LibraryBook & { tracks: LibraryTrack[] };
 
 const filenameOrder = new Intl.Collator(undefined, { numeric: true });
 
-/** Stores a book and all successfully copied tracks in one transaction. */
-export async function saveBook(book: SavedBookFiles): Promise<void> {
+/** Stores successfully copied tracks and updates the book in one transaction. */
+export async function saveBook(book: SavedBookFiles, append = false): Promise<void> {
   if (book.files.length === 0) throw new Error(LIBRARY_ERROR_MESSAGES.emptyBook);
 
   const tracks = [...book.files]
@@ -34,7 +35,10 @@ export async function saveBook(book: SavedBookFiles): Promise<void> {
       (first, second) =>
         (first.disk.no ?? 1) - (second.disk.no ?? 1) ||
         (first.track.no ?? Infinity) - (second.track.no ?? Infinity) ||
-        filenameOrder.compare(first.name, second.name),
+        filenameOrder.compare(
+          stripPolishDiacritics(first.name),
+          stripPolishDiacritics(second.name),
+        ),
     )
     .map<LibraryTrack>((file, position) => ({
       id: file.id,
@@ -44,24 +48,32 @@ export async function saveBook(book: SavedBookFiles): Promise<void> {
       position,
     }));
 
-  const duration = tracks.reduce<number | null>(
-    (total, track) => (total === null || track.duration === null ? null : total + track.duration),
-    0,
-  );
-
   await withLibraryDatabase((database) =>
     database.withTransactionAsync(async () => {
-      await database.runAsync(
-        `INSERT INTO books (id, userId, title, author, duration, coverPath, createdAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        book.bookId,
-        book.userId,
-        book.title,
-        book.author,
-        duration,
-        book.coverRelativePath?.trim() || DEFAULT_BOOK_COVER_PATH,
-        Date.now(),
-      );
+      let startPosition = 0;
+      if (append) {
+        const existing = await database.getFirstAsync<{ nextPosition: number }>(
+          `SELECT COALESCE(MAX(tracks.position) + 1, 0) AS nextPosition
+           FROM books LEFT JOIN tracks ON tracks.bookId = books.id
+           WHERE books.id = ? AND books.userId = ?
+           GROUP BY books.id`,
+          book.bookId,
+          book.userId,
+        );
+        if (!existing) throw new Error(LIBRARY_ERROR_MESSAGES.bookUnavailable);
+        startPosition = existing.nextPosition;
+      } else {
+        await database.runAsync(
+          `INSERT INTO books (id, userId, title, author, coverPath, createdAt)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          book.bookId,
+          book.userId,
+          book.title,
+          book.author,
+          book.coverRelativePath?.trim() || DEFAULT_BOOK_COVER_PATH,
+          Date.now(),
+        );
+      }
 
       for (const track of tracks) {
         await database.runAsync(
@@ -72,9 +84,18 @@ export async function saveBook(book: SavedBookFiles): Promise<void> {
           track.title,
           track.filePath,
           track.duration,
-          track.position,
+          startPosition + track.position,
         );
       }
+
+      await database.runAsync(
+        `UPDATE books SET duration = (
+           SELECT CASE WHEN COUNT(duration) = COUNT(*) THEN SUM(duration) ELSE NULL END
+           FROM tracks WHERE bookId = books.id
+         ) WHERE id = ? AND userId = ?`,
+        book.bookId,
+        book.userId,
+      );
     }),
   );
 }

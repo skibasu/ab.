@@ -1,4 +1,5 @@
 import Header from '@/components/global/Header/Header';
+import { ResetLibraryAction } from '@/components/global/Header/ResetLibraryAction/ResetLibraryAction';
 import { APP_HEADERS } from '@/constants/navigation';
 import { useLibraryInitialization } from '@/hooks/use-library-initialization';
 import { Stack } from 'expo-router';
@@ -15,7 +16,12 @@ export default function AppLayout() {
       <Stack.Screen
         name="index"
         options={{
-          header: () => <Header {...APP_HEADERS.library} />,
+          header: () => (
+            <Header
+              {...APP_HEADERS.library}
+              trailingAction={__DEV__ ? <ResetLibraryAction /> : null}
+            />
+          ),
         }}
       />
       <Stack.Screen
