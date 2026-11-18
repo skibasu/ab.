@@ -77,12 +77,18 @@ const HomeScreen = () => {
                   }),
                 );
                 await fetchBooks(userId);
+                return userId;
               } finally {
                 setIsImporting(false);
               }
-            }).catch((error) => {
-              console.error(LOG_MESSAGES.bookImport.preparationFailed, error);
-            });
+            })
+              .then((importedForUserId) => {
+                if (importedForUserId)
+                  useLibraryStore.getState().fetchMissingCovers(importedForUserId);
+              })
+              .catch((error) => {
+                console.error(LOG_MESSAGES.bookImport.preparationFailed, error);
+              });
           }}
         />
       </View>

@@ -16,7 +16,7 @@ export const styles = (theme: AppTheme) =>
       borderRadius: theme.borderRadius.control,
       overflow: 'hidden',
     },
-    cover: { position: 'absolute', width: '100%', height: '100%' },
+    cover: StyleSheet.absoluteFill,
     title: { ...theme.textStyles.bookTile, color: theme.textColor.primary },
     author: { ...theme.textStyles.metadata, color: theme.textColor.secondary },
   });

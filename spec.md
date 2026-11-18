@@ -56,17 +56,17 @@ Obecny etap obejmuje logikę importu MP3/ZIP i lokalnej biblioteki. Budowanie in
 
 - Już pierwsza wersja odczytuje metadane z tagów MP3: dane potrzebne do ustalenia tytułu książki, autora, nazwy części, kolejności oraz osadzoną okładkę, jeśli występuje.
 - Grupowanie plików w książki opiera się na metadanych. Nie przyjmujemy automatycznie zasady „jeden ZIP = jedna książka” ani „jeden import MP3 = jedna książka”.
-- Kluczem grupowania jest album (tytuł książki) oraz album artist (autor); przy braku album artist korzystamy z artist.
+- Kluczem grupowania jest album (tytuł książki) i autor. Przy imporcie MP3 jako autora używamy tagu `artist`, a przy jego braku `albumArtist`. W starszym wpisie z autorem zapisanym z `albumArtist` poprawiamy autora po ponownym imporcie, jeśli co najmniej jeden plik ma identyczną zawartość.
 - Tag title określa tytuł części. Części sortujemy według numeru dysku, następnie numeru ścieżki, a następnie naturalnej kolejności nazw plików (np. 1, 2, 10).
 - Jeden ZIP może zawierać kilka książek. Pliki z podkatalogów podlegają tym samym regułom grupowania według tagów; nazwa ZIP ani podkatalogu nie jest kluczem książki.
-- Odczyt okładki osadzonej w pliku jest w zakresie. Wyszukiwanie okładek w internecie nie jest zatwierdzone; na obecnym etapie korzystamy z tagów.
+- Okładka osadzona w MP3 ma pierwszeństwo. Gdy nowa książka jej nie ma, zapis i wyświetlenie biblioteki kończą się z okładką domyślną. Następnie aplikacja szuka okładki w Open Library po tytule i autorze, zapisuje ją obok MP3 i aktualizuje widoczną książkę.
 - Przy braku metadanych stosujemy `Unknown`, bez odgadywania albumu, autora czy tytułu z nazwy pliku, ZIP lub katalogu. Zakładamy, że użytkownicy importują przygotowane pliki z tagami.
 - Wszystkie pliki bez znanego albumu trafiają do jednej książki i jednego katalogu `Unknown` na konto, niezależnie od tagu autora. Obejmuje to brak tagu, pusty tag i wartość `Unknown`. Autor tej grupy to `Unknown`.
 - Gdy album występuje, lecz brakuje autora, stosujemy autora `Unknown` i grupujemy według albumu i tej wartości zastępczej.
 - Jeśli książka o tym samym albumie i autorze istnieje już na danym koncie, dopisujemy tylko nieobecne MP3 do jej katalogu. Identyczność plików sprawdzamy po ich zawartości. Porównanie albumu i autora pomija różnice w wielkości liter i odstępach. Nowe części dopisujemy po istniejących, a łączny czas przeliczamy.
 - Przy porównywaniu metadanych, sortowaniu nazw plików i zapytaniach do Open Library zamieniamy polskie znaki na odpowiedniki bez znaków diakrytycznych. Zapisane i wyświetlane metadane zachowują oryginalną pisownię.
 - Odrzucenie importu nie modyfikuje żadnej istniejącej książki. Dotyczy to również importu kilku książek, gdy tylko jedna z nich już istnieje.
-- Priorytet okładek przy wielu osadzonych obrazach i normalizacja wartości tagów wymagają doprecyzowania. Brak okładki nie jest wartością tekstową `Unknown`; biblioteka zapisuje brak obrazu.
+- Przy wyszukiwaniu okładek sprawdzamy także tytuł dopasowanego wydania, np. polskiego przekładu, i porównujemy autora. Przy braku wyniku lub błędzie zostaje okładka domyślna. Po uruchomieniu aplikacji można ponowić wyszukiwanie dla już zapisanych książek nadal używających domyślnej okładki, raz na książkę podczas działania aplikacji.
 - Nie dodajemy formularza edycji danych na obecnym etapie bez osobnego ustalenia.
 
 ### Operacje biblioteki

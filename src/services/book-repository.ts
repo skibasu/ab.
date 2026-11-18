@@ -156,6 +156,17 @@ export function getBook(userId: string, bookId: string): Promise<LibraryBookWith
   });
 }
 
+export function updateBookAuthor(userId: string, bookId: string, author: string): Promise<void> {
+  return withLibraryDatabase(async (database) => {
+    await database.runAsync(
+      'UPDATE books SET author = ? WHERE id = ? AND userId = ?',
+      author,
+      bookId,
+      userId,
+    );
+  });
+}
+
 /** Deletes the database record and its tracks. Audio and covers are managed separately. */
 export function deleteBook(userId: string, bookId: string): Promise<boolean> {
   return withLibraryDatabase(async (database) => {

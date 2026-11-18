@@ -18,10 +18,11 @@ export function groupFiles<T extends AudioFile>(files: T[]) {
   const groups = new Map<string, { title: string; author: string; files: T[] }>();
 
   for (const file of files) {
-    const album = file.album?.trim();
-    const title = album && album.toLowerCase() !== unknown.toLowerCase() ? album : unknown;
+    const title = knownTag(file.album) ?? unknown;
     const author =
-      title === unknown ? unknown : file.albumArtist?.trim() || file.artist?.trim() || unknown;
+      title === unknown
+        ? unknown
+        : (knownTag(file.artist) ?? knownTag(file.albumArtist) ?? unknown);
 
     const key = bookGroupKey(title, author);
 
@@ -39,4 +40,9 @@ export function groupFiles<T extends AudioFile>(files: T[]) {
   }
 
   return Array.from(groups.values());
+}
+
+function knownTag(tag?: string): string | undefined {
+  const text = tag?.trim();
+  return text && text.toLowerCase() !== 'unknown' ? text : undefined;
 }

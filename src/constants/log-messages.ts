@@ -25,6 +25,10 @@ export const LOG_MESSAGES = {
     fileCopySkipped: 'Skipped an audio file because it could not be copied:',
     fileComparisonSkipped: 'Skipped an audio file because it could not be checked for duplicates:',
     coverSkipped: 'Skipped an embedded cover because it could not be saved:',
+    remoteCoverLookup: 'Searching Open Library for a cover:',
+    remoteCoverNotFound: 'No matching cover found on Open Library:',
+    remoteCoverMissingMetadata:
+      'Skipped Open Library cover lookup because the title or author is missing:',
     remoteCoverSkipped: 'Skipped an Open Library cover because it could not be fetched or saved:',
     remoteCoverCleanupFailed: 'Failed to remove a partial Open Library cover:',
     emptyBookSkipped: 'Skipped a book because no audio files could be saved:',

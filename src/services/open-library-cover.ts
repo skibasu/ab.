@@ -1,13 +1,19 @@
 import { fetch } from 'expo/fetch';
+import { LIBRARY_ERROR_MESSAGES } from '@/constants/errors';
+import { LOG_MESSAGES } from '@/constants/log-messages';
 import { stripPolishDiacritics } from '@/utils/strip-polish-diacritics';
 
 const SEARCH_INTERVAL_MS = 1_000;
 const LOOKUP_TIMEOUT_MS = 5_000;
 
-type SearchResult = {
+type CoverResult = {
   title?: string;
-  author_name?: string[];
   cover_i?: number;
+};
+
+type SearchResult = CoverResult & {
+  author_name?: string[];
+  editions?: { docs?: CoverResult[] };
 };
 
 let pendingSearch = Promise.resolve();
@@ -20,8 +26,20 @@ export async function findOpenLibraryCover(
 ): Promise<Uint8Array | null> {
   const normalizedTitle = normalizeName(title);
   const normalizedAuthor = normalizeName(author);
-  if (!normalizedTitle || !normalizedAuthor) return null;
-  if (normalizedTitle === 'unknown' || normalizedAuthor === 'unknown') return null;
+  if (
+    !normalizedTitle ||
+    !normalizedAuthor ||
+    normalizedTitle === 'unknown' ||
+    normalizedAuthor === 'unknown'
+  ) {
+    console.info(LOG_MESSAGES.bookImport.remoteCoverMissingMetadata, { title, author });
+    return null;
+  }
+
+  const query = {
+    title: stripPolishDiacritics(title).trim(),
+    author: stripPolishDiacritics(author).trim(),
+  };
 
   const search = pendingSearch.then(async () => {
     const delay = nextSearchAt - Date.now();
@@ -29,21 +47,23 @@ export async function findOpenLibraryCover(
     nextSearchAt = Date.now() + SEARCH_INTERVAL_MS;
 
     const params = new URLSearchParams({
-      title: stripPolishDiacritics(title).trim(),
-      author: stripPolishDiacritics(author).trim(),
-      fields: 'title,author_name,cover_i',
-      limit: '5',
+      q: query.title,
+      lang: 'pl',
+      fields: 'key,title,author_name,cover_i,editions,editions.key,editions.title,editions.cover_i,editions.language',
+      limit: '10',
     });
+    console.info(LOG_MESSAGES.bookImport.remoteCoverLookup, query);
     return request(`https://openlibrary.org/search.json?${params}`, async (response) => {
       const data: { docs?: SearchResult[] } = await response.json();
-      return data.docs?.find(
-        (book) =>
-          typeof book.cover_i === 'number' &&
-          Number.isSafeInteger(book.cover_i) &&
-          book.cover_i > 0 &&
-          normalizeName(book.title ?? '') === normalizedTitle &&
-          book.author_name?.some((name) => normalizeName(name) === normalizedAuthor),
-      )?.cover_i;
+      let workCoverId: number | undefined;
+      for (const work of data.docs ?? []) {
+        if (!work.author_name?.some((name) => normalizeName(name) === normalizedAuthor)) continue;
+
+        const edition = work.editions?.docs?.find((item) => matchesCover(item, normalizedTitle));
+        if (edition) return edition.cover_i;
+        if (matchesCover(work, normalizedTitle)) workCoverId ??= work.cover_i;
+      }
+      return workCoverId;
     });
   });
   pendingSearch = search.then(
@@ -52,9 +72,12 @@ export async function findOpenLibraryCover(
   );
 
   const coverId = await search;
-  if (!coverId) return null;
+  if (!coverId) {
+    console.info(LOG_MESSAGES.bookImport.remoteCoverNotFound, query);
+    return null;
+  }
 
-  return request(
+  const cover = await request(
     `https://covers.openlibrary.org/b/id/${coverId}-M.jpg?default=false`,
     async (response) => {
       const bytes = await response.bytes();
@@ -62,13 +85,26 @@ export async function findOpenLibraryCover(
       return isJpeg ? bytes : null;
     },
   );
+  if (!cover) console.info(LOG_MESSAGES.bookImport.remoteCoverNotFound, query);
+  return cover;
 }
 
 function normalizeName(value: string): string {
   return stripPolishDiacritics(value.normalize('NFKC'))
+    .normalize('NFKD')
+    .replace(/\p{M}+/gu, '')
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim();
+}
+
+function matchesCover(book: CoverResult, normalizedTitle: string): boolean {
+  return (
+    normalizeName(book.title ?? '') === normalizedTitle &&
+    typeof book.cover_i === 'number' &&
+    Number.isSafeInteger(book.cover_i) &&
+    book.cover_i > 0
+  );
 }
 
 async function request<T>(
@@ -80,7 +116,10 @@ async function request<T>(
 
   try {
     const response = await fetch(url, { signal: controller.signal });
-    return response.ok ? await read(response) : null;
+    if (response.status === 404) return null;
+    if (!response.ok)
+      throw new Error(LIBRARY_ERROR_MESSAGES.remoteCoverRequestFailed(response.status));
+    return await read(response);
   } finally {
     clearTimeout(timer);
   }

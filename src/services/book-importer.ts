@@ -1,11 +1,9 @@
 import { Directory, File } from 'expo-file-system';
 
-import { getBook, listBooks, saveBook } from './book-repository';
+import { getBook, listBooks, saveBook, updateBookAuthor } from './book-repository';
 import { saveBookFiles, type BookToSave, type SavedBookFiles } from './library-storage';
 import { findNewBookFiles } from './new-book-files';
-import { findOpenLibraryCover } from './open-library-cover';
 import { LIBRARY_ERROR_MESSAGES } from '@/constants/errors';
-import { LOG_MESSAGES } from '@/constants/log-messages';
 import { bookGroupKey } from '@/utils/group-files';
 
 /** Imports a new book or appends missing audio files to an existing book. */
@@ -14,15 +12,40 @@ export async function importBook(userId: string, book: BookToSave): Promise<Save
   const books = await listBooks(userId);
   // When older imports left multiple copies, append to the oldest one.
   const match = books.findLast((item) => bookGroupKey(item.title, item.author) === key);
-  const existing = match ? await getBook(userId, match.id) : null;
-  const files = await findNewBookFiles(book.files, existing?.tracks ?? []);
+  let existing = match ? await getBook(userId, match.id) : null;
+  let newFiles;
+
+  if (!existing) {
+    const previousKeys = new Set(
+      book.files.flatMap(({ albumArtist }) =>
+        albumArtist?.trim() ? [bookGroupKey(book.title, albumArtist)] : [],
+      ),
+    );
+
+    // Earlier imports used the album artist. Only repair a record when the audio also matches.
+    for (const previous of books
+      .filter((item) => previousKeys.has(bookGroupKey(item.title, item.author)))
+      .reverse()) {
+      const candidate = await getBook(userId, previous.id);
+      if (!candidate) continue;
+
+      const compared = await findNewBookFiles(book.files, candidate.tracks);
+      if (!compared.matchesSavedTrack) continue;
+
+      await updateBookAuthor(userId, candidate.id, book.author);
+      existing = candidate;
+      newFiles = compared;
+      break;
+    }
+  }
+
+  const { files } = newFiles ?? (await findNewBookFiles(book.files, existing?.tracks ?? []));
   if (files.length === 0) return null;
 
   const savedBook = await saveBookFiles(userId, { ...book, files }, existing?.id);
   if (!savedBook) return null;
 
   try {
-    if (!existing && !savedBook.coverRelativePath) await saveOpenLibraryCover(savedBook);
     await saveBook(savedBook, existing !== null);
     return savedBook;
   } catch (error) {
@@ -43,32 +66,5 @@ export async function importBook(userId: string, book: BookToSave): Promise<Save
       );
     }
     throw error;
-  }
-}
-
-async function saveOpenLibraryCover(book: SavedBookFiles): Promise<void> {
-  let file: File | undefined;
-
-  try {
-    const bytes = await findOpenLibraryCover(book.title, book.author);
-    if (!bytes) return;
-
-    const filename = 'cover.jpg';
-    file = new File(book.directoryUri, filename);
-    await file.write(bytes);
-    book.coverUri = file.uri;
-    book.coverRelativePath = `${book.relativePath}/${filename}`;
-    book.coverMimeType = 'image/jpeg';
-  } catch (error) {
-    console.warn(LOG_MESSAGES.bookImport.remoteCoverSkipped, { bookId: book.bookId }, error);
-    try {
-      if (file?.exists) file.delete();
-    } catch (cleanupError) {
-      console.warn(
-        LOG_MESSAGES.bookImport.remoteCoverCleanupFailed,
-        { bookId: book.bookId },
-        cleanupError,
-      );
-    }
   }
 }

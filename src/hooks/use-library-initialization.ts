@@ -18,6 +18,6 @@ export function useLibraryInitialization(): void {
       console.error(LOG_MESSAGES.library.initializationFailed, error);
     }
 
-    void fetchBooks(userId);
+    void fetchBooks(userId).then(() => useLibraryStore.getState().fetchMissingCovers(userId));
   }, [fetchBooks, userId]);
 }

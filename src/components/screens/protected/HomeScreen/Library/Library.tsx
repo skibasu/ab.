@@ -3,7 +3,8 @@ import { DEFAULT_BOOK_COVER_PATH } from '@/constants/book-cover';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useLibraryStore } from '@/stores/library-store';
 import { File, Paths } from 'expo-file-system';
-import { Image, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Text, View } from 'react-native';
 import { styles } from './styles';
 
 const sampleCover = require('../../../../../../assets/images/sample-cover.png');
@@ -23,12 +24,15 @@ export const Library = () => {
           <View style={localStyles.coverFrame}>
             <Image
               source={
-                book.coverPath === DEFAULT_BOOK_COVER_PATH
+                !book.coverPath?.trim() || book.coverPath === DEFAULT_BOOK_COVER_PATH
                   ? sampleCover
                   : { uri: new File(Paths.document, book.coverPath).uri }
               }
+              placeholder={sampleCover}
+              placeholderContentFit="cover"
               style={localStyles.cover}
-              resizeMode="cover"
+              contentFit="cover"
+              transition={450}
             />
           </View>
           <Text style={localStyles.title}>{book.title}</Text>

@@ -47,6 +47,10 @@ export function getLibraryRoot(): Directory {
   return new Directory(Paths.document, 'library');
 }
 
+export function getBookRelativePath(userId: string, bookId: string): string {
+  return `library/${userId}/books/${bookId}`;
+}
+
 /**
  * Ensures Documents/library/<userId>/books exists in the app's local storage.
  * Safe to call on every login or before import; existing files remain untouched.
@@ -85,7 +89,7 @@ export async function saveBookFiles(
 
   const library = initializeLibrary(userId);
   const bookId = existingBookId ?? randomUUID();
-  const relativePath = `library/${userId}/books/${bookId}`;
+  const relativePath = getBookRelativePath(userId, bookId);
   const bookDirectory = new Directory(library, bookId);
 
   // Fail on a collision before entering rollback, so an existing directory is never deleted.

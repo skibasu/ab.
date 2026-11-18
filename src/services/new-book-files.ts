@@ -11,9 +11,10 @@ const CHUNK_SIZE = 256 * 1024;
 export async function findNewBookFiles(
   files: BookFileWithMetadata[],
   tracks: LibraryTrack[],
-): Promise<BookFileWithMetadata[]> {
+): Promise<{ files: BookFileWithMetadata[]; matchesSavedTrack: boolean }> {
   const candidates = tracks.map(({ filePath }) => new File(Paths.document, filePath));
   const bySize = new Map<number | null, File[]>();
+  const savedUris = new Set<string>();
   const add = (file: File, size: number | null) => {
     const bucket = bySize.get(size);
     if (bucket) bucket.push(file);
@@ -21,10 +22,14 @@ export async function findNewBookFiles(
   };
 
   for (const file of candidates) {
-    if (file.exists) add(file, file.size);
+    if (file.exists) {
+      add(file, file.size);
+      savedUris.add(file.uri);
+    }
   }
 
   const result: BookFileWithMetadata[] = [];
+  let matchesSavedTrack = false;
   for (const selected of files) {
     try {
       const file = new File(selected.uri);
@@ -37,6 +42,7 @@ export async function findNewBookFiles(
       for (const candidate of matches) {
         if (await sameContent(file.uri, candidate.uri)) {
           duplicate = true;
+          if (savedUris.has(candidate.uri)) matchesSavedTrack = true;
           break;
         }
       }
@@ -49,7 +55,7 @@ export async function findNewBookFiles(
     }
   }
 
-  return result;
+  return { files: result, matchesSavedTrack };
 }
 
 async function sameContent(firstUri: string, secondUri: string): Promise<boolean> {
