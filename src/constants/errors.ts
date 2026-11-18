@@ -53,3 +53,20 @@ export const TECHNICAL_ERROR_MESSAGES = {
   emailCooldownSaveFailed: 'Failed to save the email resend cooldown.',
   passwordResetCooldown: 'The password reset email cooldown is still active.',
 } as const;
+
+/** Technical audio errors; these messages are not intended for display in the UI. */
+export const AUDIO_ERROR_MESSAGES = {
+  fileSizeUnavailable: 'Could not determine the audio file size.',
+  readerClosed: 'The audio file reader is closed.',
+  invalidReadPosition: 'The read position must be a non-negative safe integer.',
+  invalidReadLength: 'The read length must be a non-negative safe integer.',
+  tokenizerClosed: 'The audio file tokenizer is closed.',
+  localFileUnavailable: 'Could not resolve the local MP3 file.',
+} as const;
+
+/** Technical errors raised while preparing or writing the local book library. */
+export const LIBRARY_ERROR_MESSAGES = {
+  invalidUserId: 'A valid user ID is required to save book files.',
+  emptyBook: 'A book must contain at least one audio file.',
+  saveAndCleanupFailed: 'Failed to save book files and clean up the new directory.',
+} as const;

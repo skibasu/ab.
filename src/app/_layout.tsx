@@ -13,6 +13,7 @@ import { Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { STARTUP_ERROR_MESSAGE, TECHNICAL_ERROR_MESSAGES } from '@/constants/errors';
+import { LOG_MESSAGES } from '@/constants/log-messages';
 import { ROOT_STACK_OPTIONS } from '@/constants/navigation';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { getFirebaseAuth } from '@/services/firebase';
@@ -21,12 +22,12 @@ import { fontFamilies } from '@/theme/fonts';
 import { styles } from '@/styles/root-layout';
 
 void SplashScreen.preventAutoHideAsync().catch((error: unknown) => {
-  console.error(TECHNICAL_ERROR_MESSAGES.preventSplashAutoHideFailed, error);
+  console.error(LOG_MESSAGES.startup.preventSplashAutoHideFailed, error);
 });
 
 function hideSplashScreen() {
   void SplashScreen.hideAsync().catch((error: unknown) => {
-    console.error(TECHNICAL_ERROR_MESSAGES.hideSplashFailed, error);
+    console.error(LOG_MESSAGES.startup.hideSplashFailed, error);
   });
 }
 
@@ -36,7 +37,7 @@ export function ErrorBoundary({ error }: ErrorBoundaryProps) {
 
   useEffect(() => {
     hideSplashScreen();
-    console.error(TECHNICAL_ERROR_MESSAGES.rootLayoutFailed, error);
+    console.error(LOG_MESSAGES.startup.rootLayoutFailed, error);
   }, [error]);
 
   return (

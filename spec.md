@@ -23,6 +23,14 @@ Obecny etap obejmuje logikę importu MP3/ZIP i lokalnej biblioteki. Budowanie in
 
 - Cały nowy i modyfikowany kod zapisujemy po angielsku. Nie dodajemy polskich tekstów w kodzie: dotyczy to nazw zmiennych i funkcji, komentarzy, logów konsoli, komunikatów błędów oraz tekstów interfejsu.
 
+### Błędy i logi
+
+- Nie wpisujemy komunikatów błędów bezpośrednio jako stringów w komponentach, hookach ani serwisach. Definiujemy je w `src/constants/errors.ts`, w kategorii odpowiadającej funkcjonalności (np. uwierzytelnianie, błędy techniczne, audio, biblioteka).
+- Zachowujemy rozdział między komunikatami dla użytkownika, technicznymi komunikatami wyjątków i kodami błędów. Kody własnych błędów wymagających rozpoznawania definiujemy w `APP_ERROR_CODES`; nie opieramy logiki na porównywaniu treści komunikatu.
+- Wszystkie teksty dla `console.log`, `console.info`, `console.warn`, `console.error` i pozostałych metod konsoli definiujemy w `src/constants/log-messages.ts`, w kategoriach funkcjonalnych. Nie dodajemy stringów ani template literals bezpośrednio w wywołaniach konsoli.
+- Logi korzystają z nazwanych komunikatów lub funkcji formatujących. Dane kontekstowe oraz oryginalny obiekt błędu przekazujemy osobno, aby zachować stack trace i przyczynę błędu.
+- Komunikaty narzędzi uruchamianych przez Node.js i konfiguracji budowania definiujemy osobno w `tooling-messages.cjs`, bez zależności od kodu aplikacji. Dane i sygnały testowe pozostają w nazwanych stałych testów.
+
 ### Platforma i źródła
 
 - Pierwsze wdrożenie importu dotyczy iPhone'a.
@@ -65,7 +73,9 @@ Obecny etap obejmuje logikę importu MP3/ZIP i lokalnej biblioteki. Budowanie in
 - Logika biblioteki obejmuje odczyt książek aktualnego konta, dodawanie kompletnych książek oraz usuwanie.
 - Usunięcie książki obejmuje jej lokalne audio, okładkę i metadane oraz powiązany lokalny postęp, jeżeli zostanie wprowadzony w etapie odtwarzacza.
 - Usuwanie dotyczy wyłącznie biblioteki aktualnego konta. Nie usuwa oryginałów w iCloud, Dropbox ani innych źródłach.
-- Zapis importu jest całościowy: wszystkie przygotowane książki stają się dostępne razem albo żadna z nich. Błąd lub anulowanie przed zatwierdzeniem pozostawia dotychczasową bibliotekę bez zmian.
+- Błąd odczytu lub kopiowania pojedynczego MP3 pomija ten plik i nie blokuje pozostałych części ani książek. Zapisujemy poprawne pliki; częściowo skopiowane pliki usuwamy. Jest to wyjątek od wcześniejszego wymagania całościowego zapisu importu.
+- Książkę zapisujemy, jeśli udało się zachować co najmniej jedną poprawną część. Jeśli wszystkie jej pliki zostaną pominięte, usuwamy nowy katalog i pomijamy książkę. Błąd zapisu okładki pozwala zapisać książkę bez okładki.
+- Każde pominięcie jest raportowane w konsoli nazwanym komunikatem i kontekstem pliku; wynik zapisu zawiera listę plików pominiętych podczas kopiowania. Błędy katalogu docelowego lub sprzątania są nadal błędami operacji, nie pominięciem pojedynczego MP3.
 
 ### Limity
 
@@ -95,8 +105,8 @@ Obecny etap obejmuje logikę importu MP3/ZIP i lokalnej biblioteki. Budowanie in
 3. Aplikacja sprawdza wybrane typy, rozmiary, liczbę plików i dostępne miejsce.
 4. Dla ZIP sprawdza zawartość i limity rozpakowania; dla MP3 przygotowuje kopiowanie.
 5. Kopiuje lub rozpakowuje audio do katalogu roboczego aplikacji, udostępniając aktualny etap dla przyszłego interfejsu.
-6. Odczytuje tagi i osadzone okładki oraz grupuje części w książki według albumu i autora. Przy brakujących danych stosuje `Unknown`; każdy plik bez albumu tworzy osobną książkę. Jeśli rozpozna książkę istniejącą już w bibliotece konta, anuluje cały import i sprząta jego pliki robocze.
-7. Po pomyślnym przygotowaniu wszystkich plików oraz ponownym sprawdzeniu konta i braku istniejących książek zatwierdza cały import w bibliotece. Wszystkie nowe książki stają się dostępne razem.
+6. Odczytuje tagi i osadzone okładki, pomija pliki z błędem odczytu i grupuje pozostałe części w książki według albumu i autora. Przy brakujących danych stosuje `Unknown`; każdy plik bez albumu tworzy osobną książkę. Jeśli rozpozna książkę istniejącą już w bibliotece konta, anuluje cały import i sprząta jego pliki robocze.
+7. Po przygotowaniu plików oraz ponownym sprawdzeniu konta i braku istniejących książek zapisuje poprawne części. Błąd kopiowania MP3 pomija ten plik; książka bez żadnej zapisanej części zostaje pominięta.
 8. Sprząta dane robocze i pokazuje książkę w bibliotece.
 
 Powyższy przebieg opisuje docelowe użycie logiki. W obecnym etapie stan, postęp i wynik importu mają być dostępne dla przyszłego interfejsu, bez budowania nowych ekranów i formularzy. Dokładne ekrany, moment potwierdzenia danych i zachowanie po zakończeniu importu dopracujemy w etapie UI.
@@ -120,7 +130,7 @@ Powyższy przebieg opisuje docelowe użycie logiki. W obecnym etapie stan, post�
 - Nie gwarantujemy kontynuowania importu w tle ani po zamknięciu aplikacji. Po przerwaniu procesu przez system sprzątamy jego dane robocze; użytkownik rozpoczyna import ponownie od początku. Nie implementujemy wznawiania.
 - Wylogowanie lub zmiana konta anuluje import przed zatwierdzeniem biblioteki. Import jest związany z identyfikatorem konta, na którym został rozpoczęty; nie może zostać zapisany dla nowego konta.
 - Po przerwanym lub nieudanym imporcie aplikacja sprząta własne pliki robocze, także przy kolejnym uruchomieniu.
-- Niedokończona książka nie pojawia się jako gotowa do odtwarzania.
+- Książka może zawierać mniej części niż wybrano, jeśli błędne pliki zostały pominięte. Do odtwarzania udostępniamy wyłącznie części, których zapis zakończył się poprawnie, po zakończeniu próby zapisu książki.
 - Błąd zapisu biblioteki po skopiowaniu audio nie może pozostawić niewidocznych, niezarządzanych plików.
 
 ## Szczegóły do dopracowania przed implementacją
@@ -144,7 +154,7 @@ Powyższy przebieg opisuje docelowe użycie logiki. W obecnym etapie stan, post�
 - Import nie zmienia i nie usuwa oryginałów użytkownika.
 - Tagi są odczytywane już w pierwszej wersji; grupowanie i kolejność części odpowiadają zatwierdzonym regułom, a osadzona okładka zostaje zachowana w lokalnej bibliotece.
 - Pliki bez albumu tworzą osobne książki `Unknown`. Wykrycie istniejącej książki według albumu i autora anuluje cały import bez zmian w bibliotece.
-- Zapis kilku książek jest całościowy; błąd, anulowanie lub zmiana konta przed zatwierdzeniem nie pozostawia częściowo dodanych książek.
+- Błąd pojedynczego MP3 nie usuwa poprawnie zapisanych części ani innych książek. Książka bez poprawnie zapisanych części jest pomijana, a jej katalog usuwany. Zmiana konta nadal anuluje import zgodnie z zasadą izolacji kont.
 - Usunięcie książki usuwa jej lokalne audio, okładkę i metadane, nie zmieniając książek innych kont ani źródłowych plików użytkownika.
 - Zmiana limitów wymaga edycji jednego pliku konfiguracyjnego; poszczególne moduły nie powielają wartości limitów.
 - Limity, brak miejsca, błędy odczytu i zapisu oraz uszkodzony ZIP nie powodują zapisu książki jako gotowej.

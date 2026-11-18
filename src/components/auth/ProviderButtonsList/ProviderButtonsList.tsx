@@ -3,6 +3,7 @@ import { Platform, Text, View } from 'react-native';
 
 import ButtonProvider from '@/components/ui/ButtonProvider/ButtonProvider';
 import { AUTH_PROVIDERS } from '@/constants/auth-providers';
+import { LOG_MESSAGES } from '@/constants/log-messages';
 import { useFormContext } from '@/context/useFormContext';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { getAuthErrorMessage } from '@/services/firebase-auth-errors';
@@ -54,7 +55,9 @@ const ProviderButtonsList = ({
               disabled={isServiceDisabled}
               loading={isGoogle && isGoogleSigningIn}
               onPress={
-                isGoogle ? handleGoogleSignIn : () => console.log(`${provider.label} login pressed`)
+                isGoogle
+                  ? handleGoogleSignIn
+                  : () => console.log(LOG_MESSAGES.auth.providerLoginPressed(provider.label))
               }
             />
             {isGoogle && googleError && (

@@ -22,7 +22,7 @@ module.exports = function (api) {
                   path.node.body = t.blockStatement([
                     t.throwStatement(
                       t.newExpression(t.identifier('Error'), [
-                        t.stringLiteral('Node.js stream APIs are unavailable in this app.'),
+                        t.stringLiteral(BUILD_ERROR_MESSAGES.nodeStreamsUnavailable),
                       ]),
                     ),
                   ]);
@@ -35,3 +35,4 @@ module.exports = function (api) {
     ],
   };
 };
+const { BUILD_ERROR_MESSAGES } = require('./tooling-messages.cjs');

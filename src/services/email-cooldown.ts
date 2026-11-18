@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { TECHNICAL_ERROR_MESSAGES } from '@/constants/errors';
+import { LOG_MESSAGES } from '@/constants/log-messages';
 import { EMAIL_RESEND_INTERVAL_MS } from './firebaseConfig';
 
 type EmailCooldownType = 'verification' | 'passwordReset';
@@ -21,7 +21,7 @@ export async function saveEmailCooldown(type: EmailCooldownType, recipient: stri
   try {
     await AsyncStorage.setItem(storageKey, String(resendAvailableAt));
   } catch (error) {
-    console.error(TECHNICAL_ERROR_MESSAGES.emailCooldownSaveFailed, error);
+    console.error(LOG_MESSAGES.auth.emailCooldownSaveFailed, error);
   }
 }
 

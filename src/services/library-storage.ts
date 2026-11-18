@@ -2,6 +2,8 @@ import { randomUUID } from 'expo-crypto';
 import { Directory, File, Paths } from 'expo-file-system';
 
 import type { BookFileWithMetadata } from './book-metadata';
+import { LIBRARY_ERROR_MESSAGES } from '@/constants/errors';
+import { LOG_MESSAGES } from '@/constants/log-messages';
 
 export type BookToSave = {
   title: string;
@@ -26,6 +28,7 @@ export type SavedBookFiles = {
   directoryUri: string;
   relativePath: string;
   files: SavedBookFile[];
+  skippedFiles: Pick<BookFileWithMetadata, 'name' | 'uri'>[];
   coverUri: string | null;
   coverRelativePath: string | null;
   coverMimeType: string | null;
@@ -59,15 +62,20 @@ export function initializeLibrary(userId: string): Directory {
 /**
  * Copies one grouped book into a new UUID directory and saves its first available cover.
  * Source files remain in cache. Relative paths are based on Paths.document.
- * Removes only the newly created book directory if any copy or cover write fails.
+ * Skips failed MP3 copies and a failed cover write; source files stay untouched.
+ * Returns null and removes the new directory if no audio files could be saved.
+ * Directory-level failures still reject and roll back the affected book.
  * Does not persist a library record, check for duplicate books, or change file order.
  */
-export async function saveBookFiles(userId: string, book: BookToSave): Promise<SavedBookFiles> {
+export async function saveBookFiles(
+  userId: string,
+  book: BookToSave,
+): Promise<SavedBookFiles | null> {
   if (!userId || userId === '.' || userId === '..' || /[/\\]/.test(userId)) {
-    throw new Error('A valid user ID is required to save book files.');
+    throw new Error(LIBRARY_ERROR_MESSAGES.invalidUserId);
   }
   if (book.files.length === 0) {
-    throw new Error('A book must contain at least one audio file.');
+    throw new Error(LIBRARY_ERROR_MESSAGES.emptyBook);
   }
 
   const library = initializeLibrary(userId);
@@ -80,13 +88,29 @@ export async function saveBookFiles(userId: string, book: BookToSave): Promise<S
 
   try {
     const files: SavedBookFile[] = [];
+    const skippedFiles: SavedBookFiles['skippedFiles'] = [];
+    let cover: BookFileWithMetadata['cover'] = null;
 
     for (const sourceFile of book.files) {
       // Generated names avoid collisions between parts with identical source filenames.
       const id = randomUUID();
       const filename = `${id}.mp3`;
       const destination = new File(bookDirectory, filename);
-      await new File(sourceFile.uri).copy(destination);
+      try {
+        await new File(sourceFile.uri).copy(destination);
+      } catch (error) {
+        // Remove a partial copy before continuing with the remaining parts.
+        if (destination.exists) destination.delete();
+        skippedFiles.push({ name: sourceFile.name, uri: sourceFile.uri });
+        console.warn(
+          LOG_MESSAGES.bookImport.fileCopySkipped,
+          { name: sourceFile.name, uri: sourceFile.uri },
+          error,
+        );
+        continue;
+      }
+
+      cover ??= sourceFile.cover;
 
       files.push({
         id,
@@ -100,21 +124,31 @@ export async function saveBookFiles(userId: string, book: BookToSave): Promise<S
       });
     }
 
+    if (files.length === 0) {
+      bookDirectory.delete();
+      console.warn(LOG_MESSAGES.bookImport.emptyBookSkipped, { title: book.title, skippedFiles });
+      return null;
+    }
+
     let coverUri: string | null = null;
     let coverRelativePath: string | null = null;
     let coverMimeType: string | null = null;
-    const cover = book.files.find((file) => file.cover !== null)?.cover;
 
     if (cover) {
       const extension = COVER_EXTENSIONS[cover.format];
       // Preserve unfamiliar image formats as raw bytes without assigning a wrong extension.
       const filename = extension ? `cover.${extension}` : 'cover';
       const coverFile = new File(bookDirectory, filename);
-      coverFile.create();
-      await coverFile.write(cover.data);
-      coverUri = coverFile.uri;
-      coverRelativePath = `${relativePath}/${filename}`;
-      coverMimeType = cover.format;
+      try {
+        coverFile.create();
+        await coverFile.write(cover.data);
+        coverUri = coverFile.uri;
+        coverRelativePath = `${relativePath}/${filename}`;
+        coverMimeType = cover.format;
+      } catch (error) {
+        if (coverFile.exists) coverFile.delete();
+        console.warn(LOG_MESSAGES.bookImport.coverSkipped, { bookId, title: book.title }, error);
+      }
     }
 
     return {
@@ -125,6 +159,7 @@ export async function saveBookFiles(userId: string, book: BookToSave): Promise<S
       directoryUri: bookDirectory.uri,
       relativePath,
       files,
+      skippedFiles,
       coverUri,
       coverRelativePath,
       coverMimeType,
@@ -133,10 +168,7 @@ export async function saveBookFiles(userId: string, book: BookToSave): Promise<S
     try {
       if (bookDirectory.exists) bookDirectory.delete();
     } catch (cleanupError) {
-      throw new AggregateError(
-        [error, cleanupError],
-        'Failed to save book files and clean up the new directory.',
-      );
+      throw new AggregateError([error, cleanupError], LIBRARY_ERROR_MESSAGES.saveAndCleanupFailed);
     }
     throw error;
   }
