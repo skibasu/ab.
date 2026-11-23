@@ -18,6 +18,9 @@ export const LOG_MESSAGES = {
   },
   bookImport: {
     preparationFailed: 'Failed to prepare selected audio files:',
+    duplicateZipSkipped: 'Skipped a ZIP whose audio is already present in this account:',
+    zipHistoryUnavailable:
+      'Could not use ZIP import history; normal duplicate checks remain available:',
     bookSaveFailed: 'Failed to save an imported book:',
     workspaceCleanupFailed: 'Failed to clean up temporary import files:',
     fileMetadataSkipped: 'Skipped an audio file because metadata could not be read:',

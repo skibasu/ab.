@@ -32,6 +32,7 @@ const ImportBottomSheet = () => {
       const controller = new AbortController();
       importController.current = controller;
       setIsImporting(true);
+      sheetRef.current?.close();
       try {
         const files = await pickBookFiles(type);
         if (files.length === 0) return;

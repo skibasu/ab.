@@ -10,6 +10,7 @@ export async function resetTestLibrary(): Promise<void> {
     withLibraryDatabase((database) =>
       database.withTransactionAsync(async () => {
         await database.runAsync('DELETE FROM books');
+        await database.runAsync('DELETE FROM zip_import_receipts');
 
         const library = getLibraryRoot();
         if (library.exists) library.delete();

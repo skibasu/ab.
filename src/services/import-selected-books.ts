@@ -9,6 +9,7 @@ import { groupFiles } from '@/utils/group-files';
 import { assertImportNotAborted, BookImportError } from './book-import-error';
 import { importBook } from './book-importer';
 import { readBookFilesMetadata } from './book-metadata';
+import { hasCompletedZip, rememberCompletedZip } from './zip-import-history';
 import {
   assertImportDiskSpace,
   cleanupPickerFiles,
@@ -38,6 +39,7 @@ export async function importSelectedBooks(
     assertImportNotAborted(controller.signal);
   };
   let zip: PreparedZip | undefined;
+  let zipIdentity: { digest: string; size: number } | undefined;
 
   try {
     assertActive();
@@ -47,6 +49,23 @@ export async function importSelectedBooks(
     if (type === 'application/zip') {
       if (files.length > BOOK_IMPORT_CONFIG.maxZipFiles) {
         throw new BookImportError(APP_ERROR_CODES.importLimitExceeded);
+      }
+      const source = new File(files[0].uri);
+      if (!source.exists || !Number.isSafeInteger(source.size) || source.size <= 0)
+        throw new BookImportError(APP_ERROR_CODES.importInvalidZip);
+      if (source.size > BOOK_IMPORT_CONFIG.maxZipBytes)
+        throw new BookImportError(APP_ERROR_CODES.importLimitExceeded);
+      try {
+        zipIdentity = { digest: await source.digest('SHA-256'), size: source.size };
+        assertActive();
+        if (await hasCompletedZip(userId, zipIdentity.digest, zipIdentity.size, assertActive)) {
+          assertActive();
+          console.info(LOG_MESSAGES.bookImport.duplicateZipSkipped, { name: files[0].name });
+          return { savedBooks: 0, failedBooks: 0 };
+        }
+      } catch (error) {
+        assertActive();
+        console.warn(LOG_MESSAGES.bookImport.zipHistoryUnavailable, { name: files[0].name }, error);
       }
       zip = await prepareZipImport(files[0], controller.signal);
       audioFiles = zip.files;
@@ -85,15 +104,36 @@ export async function importSelectedBooks(
     const books = groupFiles(metadata);
     options.onStageChange?.('saving');
     const result = { savedBooks: 0, failedBooks: 0 };
+    const verifiedBookIds: string[] = [];
     // Sequential commits preserve source order and keep resource usage bounded.
     for (const book of books) {
       assertActive();
       try {
-        if (await importBook(userId, book, assertActive)) result.savedBooks++;
+        if (await importBook(userId, book, assertActive, (id) => verifiedBookIds.push(id)))
+          result.savedBooks++;
       } catch (error) {
         assertActive();
         result.failedBooks++;
         console.error(LOG_MESSAGES.bookImport.bookSaveFailed, { title: book.title }, error);
+      }
+    }
+    if (
+      zipIdentity &&
+      metadata.length === audioFiles.length &&
+      verifiedBookIds.length === books.length &&
+      !result.failedBooks
+    ) {
+      try {
+        await rememberCompletedZip(
+          userId,
+          zipIdentity.digest,
+          zipIdentity.size,
+          verifiedBookIds,
+          assertActive,
+        );
+      } catch (error) {
+        assertActive();
+        console.warn(LOG_MESSAGES.bookImport.zipHistoryUnavailable, { name: files[0].name }, error);
       }
     }
     return result;

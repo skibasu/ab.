@@ -4,7 +4,14 @@ import { DEFAULT_BOOK_COVER_PATH } from '@/constants/book-cover';
 import { LIBRARY_ERROR_MESSAGES } from '@/constants/errors';
 
 const DATABASE_NAME = 'library.db';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
+const ZIP_RECEIPTS_SCHEMA = `CREATE TABLE zip_import_receipts (
+  userId TEXT NOT NULL,
+  digest TEXT NOT NULL,
+  zipBytes INTEGER NOT NULL,
+  tracksJson TEXT NOT NULL,
+  PRIMARY KEY (userId, digest)
+)`;
 
 let databasePromise: Promise<SQLiteDatabase> | undefined;
 let pendingOperation: Promise<unknown> = Promise.resolve();
@@ -63,6 +70,7 @@ async function openLibraryDatabase(): Promise<SQLiteDatabase> {
             UNIQUE (bookId, position)
           );
 
+          ${ZIP_RECEIPTS_SCHEMA};
           PRAGMA user_version = ${SCHEMA_VERSION};
         `);
       });
@@ -73,8 +81,15 @@ async function openLibraryDatabase(): Promise<SQLiteDatabase> {
           ALTER TABLE books ADD COLUMN coverPath TEXT NOT NULL DEFAULT '${DEFAULT_BOOK_COVER_PATH}';
           UPDATE books SET coverPath = previousCoverPath WHERE trim(previousCoverPath) <> '';
           ALTER TABLE books DROP COLUMN previousCoverPath;
+          ${ZIP_RECEIPTS_SCHEMA};
           PRAGMA user_version = ${SCHEMA_VERSION};
         `);
+      });
+    } else if (version.user_version === 2) {
+      await database.withTransactionAsync(async () => {
+        await database.execAsync(
+          `${ZIP_RECEIPTS_SCHEMA}; PRAGMA user_version = ${SCHEMA_VERSION};`,
+        );
       });
     }
 

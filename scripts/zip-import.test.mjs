@@ -402,3 +402,46 @@ test('startup recovery removes only the dedicated workspace tree', (t) => {
   assert.ok(existsSync(join(root, 'library.mp3')));
   assert.equal(existsSync(join(Paths.cache, 'book-import-work')), false);
 });
+
+test('native extraction receives only validated entries and bypasses JS decoding', async () => {
+  const bytes = await makeZip([
+    ['book/part.mp3', 'audio', { level: 6 }],
+    ['cover.jpg', 'image'],
+  ]);
+  let delegated = false;
+  const source = {
+    size: bytes.length,
+    async read(offset, length) {
+      return bytes.slice(offset, offset + length);
+    },
+    close() {},
+  };
+  await extractZip(source, {
+    openOutput() {
+      assert.fail('Native extraction must not open JS outputs');
+    },
+    async extractEntries(entries) {
+      delegated = true;
+      assert.equal(entries.length, 2);
+      assert.equal(entries[0].audio, true);
+      assert.equal(entries[1].audio, false);
+      assert.equal(entries[0].size, 5);
+      assert.equal(typeof entries[0].checksum, 'number');
+    },
+  });
+  assert.equal(delegated, true);
+  delegated = false;
+  await assert.rejects(
+    extractZip(source, {
+      limits: { ...BOOK_IMPORT_CONFIG, maxMp3Files: 0 },
+      openOutput() {
+        assert.fail('Invalid archive must not open outputs');
+      },
+      async extractEntries() {
+        delegated = true;
+      },
+    }),
+    { code: codes.importLimitExceeded },
+  );
+  assert.equal(delegated, false);
+});

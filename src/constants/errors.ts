@@ -14,6 +14,7 @@ export const APP_ERROR_CODES = {
   importNoAudio: 'import/no-audio',
   importNoSpace: 'import/no-space',
   importCleanupFailed: 'import/cleanup-failed',
+  importNativeBuildRequired: 'import/native-build-required',
 } as const;
 
 /** Technical import failures. UI messages are kept separate from these error codes. */
@@ -26,6 +27,8 @@ export const BOOK_IMPORT_ERROR_MESSAGES = {
   [APP_ERROR_CODES.importNoAudio]: 'The selected files contain no readable MP3 audio.',
   [APP_ERROR_CODES.importNoSpace]: 'There is not enough free space to prepare and save the import.',
   [APP_ERROR_CODES.importCleanupFailed]: 'Could not remove all temporary import files.',
+  [APP_ERROR_CODES.importNativeBuildRequired]:
+    'Native ZIP import requires a new iOS development build.',
 } as const;
 
 export const AUTH_ERROR_MESSAGES = {

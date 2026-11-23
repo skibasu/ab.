@@ -15,6 +15,10 @@ let prepareHook;
 let metadataHook;
 let commitHook;
 let directSize;
+let historyHit;
+let historyRecords;
+let verifyCommits;
+let digestHook;
 function changeAccount(uid) {
   account = uid;
   for (const listener of listeners) listener({ user: { uid } });
@@ -23,6 +27,10 @@ function changeAccount(uid) {
 const mocks = {
   File: class {
     exists = true;
+    async digest() {
+      await digestHook?.();
+      return 'archive-sha256';
+    }
     get size() {
       return directSize;
     }
@@ -47,20 +55,27 @@ const mocks = {
       },
     };
   },
+  async hasCompletedZip() {
+    return historyHit;
+  },
+  async rememberCompletedZip(...args) {
+    historyRecords.push(args);
+  },
   assertImportDiskSpace() {},
   cleanupPickerFiles() {
     pickerCleanupCount++;
   },
   async readBookFilesMetadata(files) {
     metadataReads++;
-    await metadataHook?.();
-    return files.map((file) => ({ ...file, album: file.name, artist: 'Author' }));
+    const result = await metadataHook?.(files);
+    return result ?? files.map((file) => ({ ...file, album: file.name, artist: 'Author' }));
   },
-  async importBook(userId, book, assertActive) {
+  async importBook(userId, book, assertActive, onVerified) {
     assertActive();
     await commitHook?.(book, assertActive);
     assertActive();
     commits.push({ userId, title: book.title });
+    if (verifyCommits) onVerified?.(`book-${book.title}`);
     return {};
   },
 };
@@ -71,6 +86,7 @@ const modules = {
   './zip-import': ['prepareZipImport', 'assertImportDiskSpace', 'cleanupPickerFiles'],
   './book-metadata': ['readBookFilesMetadata'],
   './book-importer': ['importBook'],
+  './zip-import-history': ['hasCompletedZip', 'rememberCompletedZip'],
 };
 registerHooks({
   resolve(specifier, context, nextResolve) {
@@ -100,6 +116,10 @@ function prepare(t) {
   commits = [];
   prepareHook = metadataHook = commitHook = undefined;
   directSize = 1;
+  historyHit = false;
+  historyRecords = [];
+  verifyCommits = true;
+  digestHook = undefined;
   t.after(() => assert.equal(listeners.size, 0));
 }
 const run = (signal) =>
@@ -213,4 +233,48 @@ test('ZIP and direct MP3 selection limits are enforced before reading metadata',
   });
   assert.equal(metadataReads, 0);
   assert.deepEqual(commits, []);
+});
+
+test('known ZIP skips extraction, metadata and commits but cleans picker files', async (t) => {
+  prepare(t);
+  historyHit = true;
+  prepareHook = () => assert.fail('Known ZIP must not be extracted');
+  assert.deepEqual(await run(), { savedBooks: 0, failedBooks: 0 });
+  assert.equal(metadataReads, 0);
+  assert.deepEqual(commits, []);
+  assert.equal(cleanupCount, 0);
+  assert.equal(pickerCleanupCount, 1);
+});
+
+test('complete ZIP records verified book dependencies for the captured account', async (t) => {
+  prepare(t);
+  await run();
+  assert.equal(historyRecords.length, 1);
+  assert.deepEqual(historyRecords[0].slice(0, 4), [
+    'account-a',
+    'archive-sha256',
+    1,
+    ['book-a.mp3', 'book-b.mp3'],
+  ]);
+});
+
+test('partial metadata or audio persistence never records a completed ZIP', async (t) => {
+  prepare(t);
+  verifyCommits = false;
+  await run();
+  assert.deepEqual(historyRecords, []);
+  verifyCommits = true;
+  metadataHook = (files) => [{ ...files[0], album: 'Book', artist: 'Author' }];
+  await run();
+  assert.deepEqual(historyRecords, []);
+});
+
+test('account change during archive fingerprinting prevents extraction and receipt writes', async (t) => {
+  prepare(t);
+  digestHook = () => changeAccount('account-b');
+  prepareHook = () => assert.fail('Cancelled fingerprint must not extract');
+  await assert.rejects(run(), { code: codes.importCancelled });
+  assert.equal(metadataReads, 0);
+  assert.deepEqual(historyRecords, []);
+  assert.equal(pickerCleanupCount, 1);
 });

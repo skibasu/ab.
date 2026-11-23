@@ -7,14 +7,13 @@ import { APP_ERROR_CODES } from '@/constants/errors';
 import { openAudioFileReader } from './audio-file-reader';
 import { assertImportNotAborted, BookImportError } from './book-import-error';
 import { extractZip } from './zip-reader';
+import { createNativeZipExtractor } from './zip-native';
 
 const getWorkspaceRoot = () => new Directory(Paths.cache, 'book-import-work');
 
 export function assertImportDiskSpace(bytes: number): void {
-  if (
-    !Number.isFinite(Paths.availableDiskSpace) ||
-    Paths.availableDiskSpace < bytes + BOOK_IMPORT_CONFIG.diskReserveBytes
-  ) {
+  const available = Paths.availableDiskSpace;
+  if (!Number.isFinite(available) || available < bytes + BOOK_IMPORT_CONFIG.diskReserveBytes) {
     throw new BookImportError(APP_ERROR_CODES.importNoSpace);
   }
 }
@@ -76,10 +75,16 @@ export async function prepareZipImport(
     assertImportNotAborted(signal);
     const reader = openAudioFileReader(archive.uri);
     const files: DocumentPickerAsset[] = [];
+    const nativeExtract = createNativeZipExtractor(archive.uri, workspace.uri, signal);
     try {
       await extractZip(reader, {
         signal,
         onManifest: ({ audioBytes }) => assertImportDiskSpace(audioBytes * 2),
+        extractEntries: nativeExtract
+          ? async (entries) => {
+              files.push(...(await nativeExtract(entries)));
+            }
+          : undefined,
         openOutput(filename) {
           // Never resolve archive paths on disk. Generated names also avoid duplicate-name collisions.
           const destination = new File(workspace, `${randomUUID()}.mp3`);

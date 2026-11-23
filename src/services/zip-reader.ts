@@ -19,11 +19,19 @@ export type ZipManifest = {
   totalBytes: number;
 };
 export type ZipOutput = { write: (bytes: Uint8Array) => Promise<void>; close: () => void };
+export type NativeZipEntry = {
+  size: number;
+  checksum: number;
+  directory: boolean;
+  audio: boolean;
+  filename: string;
+};
 type ZipOptions = {
   signal?: AbortSignal;
   limits?: BookImportConfig;
   onManifest?: (manifest: ZipManifest) => void | Promise<void>;
   openOutput: (filename: string) => ZipOutput;
+  extractEntries?: (entries: NativeZipEntry[]) => Promise<void>;
 };
 
 class ZipRangeReader extends Reader<null> {
@@ -103,6 +111,11 @@ function validateEntry(entry: Entry): void {
   )
     throw new BookImportError(APP_ERROR_CODES.importInvalidZip);
   if (entry.encrypted) throw new BookImportError(APP_ERROR_CODES.importEncryptedZip);
+  if (
+    !entry.directory &&
+    (!Number.isInteger(entry.crc32) || entry.crc32! < 0 || entry.crc32! > 0xffffffff)
+  )
+    throw new BookImportError(APP_ERROR_CODES.importInvalidZip);
   if (entry.compressionMethod !== 0 && entry.compressionMethod !== 8) {
     throw new BookImportError(APP_ERROR_CODES.importUnsupportedZip);
   }
@@ -155,6 +168,19 @@ export async function extractZip(
     }
     if (!manifest.mp3Files) throw new BookImportError(APP_ERROR_CODES.importNoAudio);
     await options.onManifest?.(manifest);
+    if (options.extractEntries) {
+      await options.extractEntries(
+        entries.map((entry) => ({
+          size: entry.uncompressedSize,
+          checksum: entry.crc32 ?? 0,
+          directory: entry.directory,
+          audio: isAudio(entry),
+          filename: entry.filename,
+        })),
+      );
+      assertImportNotAborted(options.signal);
+      return manifest;
+    }
     let totalWritten = 0;
     for (const entry of entries) {
       assertImportNotAborted(options.signal);
