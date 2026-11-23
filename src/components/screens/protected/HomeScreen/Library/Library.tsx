@@ -44,6 +44,7 @@ export const Library = ({ isImporting }: { isImporting: boolean }) => {
           coverUri={item.coverUri}
           coverKey={item.id}
           importProgress={item.progress}
+          showPlayIndicator={Boolean(item.savedId)}
           variant="minimal"
           style={localStyles.card}
           onPress={

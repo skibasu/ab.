@@ -2,8 +2,10 @@ import { File, Paths } from 'expo-file-system';
 import { Image } from 'expo-image';
 import { memo } from 'react';
 import { Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { DEFAULT_BOOK_COVER_PATH } from '@/constants/book-cover';
+import { icons } from '@/constants/icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { LibraryBook } from '@/services/book-repository';
 import { bookGroupKey } from '@/utils/group-files';
@@ -12,6 +14,7 @@ import { styles } from './styles';
 import BookProgressBarLoader from '@/components/ui/BookProgressBarLoader/BookProgressBarLoader';
 
 const sampleCover = require('@/assets/images/sample-cover.png');
+const playIndicatorEntering = FadeIn.duration(300).reduceMotion(ReduceMotion.System);
 
 export type BookCardProps = {
   book: Pick<LibraryBook, 'title' | 'author' | 'coverPath' | 'duration'>;
@@ -19,6 +22,7 @@ export type BookCardProps = {
   progressLabel?: string;
   showDuration?: boolean;
   showProgress?: boolean;
+  showPlayIndicator?: boolean;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
   coverUri?: string | null;
@@ -32,6 +36,7 @@ const BookCard = ({
   progressLabel = 'Not started · 0%',
   showDuration = true,
   showProgress = true,
+  showPlayIndicator = false,
   onPress,
   style,
   coverUri,
@@ -79,6 +84,20 @@ const BookCard = ({
             <View style={localStyles.loadingOverlay} />
             <BookProgressBarLoader progress={importProgress} />
           </View>
+        )}
+        {showPlayIndicator && importProgress === undefined && (
+          <Animated.View
+            entering={playIndicatorEntering}
+            style={localStyles.playIndicator}
+            pointerEvents="none"
+          >
+            <Image
+              source={icons.playerPlay}
+              style={localStyles.playIcon}
+              contentFit="contain"
+              accessible={false}
+            />
+          </Animated.View>
         )}
       </View>
       <View style={isFull ? localStyles.fullDetails : localStyles.minimalDetails}>
