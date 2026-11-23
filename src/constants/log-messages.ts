@@ -17,6 +17,7 @@ export const LOG_MESSAGES = {
     testResetFailed: 'Failed to clear the test library:',
   },
   bookImport: {
+    limitExceeded: 'Import selection exceeds the configured limit:',
     preparationFailed: 'Failed to prepare selected audio files:',
     duplicateZipSkipped: 'Skipped a ZIP whose audio is already present in this account:',
     zipHistoryUnavailable:

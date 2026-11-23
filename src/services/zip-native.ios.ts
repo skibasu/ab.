@@ -91,7 +91,13 @@ export function createNativeZipExtractor(
             limit: APP_ERROR_CODES.importLimitExceeded,
             noSpace: APP_ERROR_CODES.importNoSpace,
           } as const;
-          throw new BookImportError(codes[result]);
+          throw new BookImportError(
+            codes[result],
+            undefined,
+            result === 'limit'
+              ? { limit: 'maxUncompressedBytes', maximum: BOOK_IMPORT_CONFIG.maxUncompressedBytes }
+              : undefined,
+          );
         }
       } finally {
         // Wait for native writes to stop before the caller is allowed to remove the workspace.

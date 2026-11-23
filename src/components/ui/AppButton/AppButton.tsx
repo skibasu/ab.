@@ -1,5 +1,5 @@
 import type { ComponentPropsWithRef } from 'react';
-import { ActivityIndicator, Pressable, Text } from 'react-native';
+import { ActivityIndicator, Pressable, Text, type StyleProp, type TextStyle } from 'react-native';
 
 import Icon from '@/components/ui/Icon/Icon';
 import type { IconName } from '@/constants/icons';
@@ -12,6 +12,7 @@ export type AppButtonProps = Omit<ComponentPropsWithRef<typeof Pressable>, 'chil
   icon?: IconName;
   loading?: boolean;
   loadingLabel?: string;
+  labelStyle?: StyleProp<TextStyle>;
 };
 
 const AppButton = ({
@@ -20,6 +21,7 @@ const AppButton = ({
   icon,
   loading = false,
   loadingLabel = label,
+  labelStyle,
   disabled = false,
   style,
   accessibilityLabel,
@@ -59,7 +61,9 @@ const AppButton = ({
           color={foregroundStyle.color}
         />
       ) : null}
-      <Text style={[localStyles.label, foregroundStyle]}>{loading ? loadingLabel : label}</Text>
+      <Text style={[localStyles.label, foregroundStyle, labelStyle]}>
+        {loading ? loadingLabel : label}
+      </Text>
     </Pressable>
   );
 };

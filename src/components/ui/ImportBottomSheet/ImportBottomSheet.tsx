@@ -1,3 +1,5 @@
+import { router, useLocalSearchParams } from 'expo-router';
+import { getImportErrorParams } from '@/utils/import-error-content';
 import { randomUUID } from 'expo-crypto';
 import { useBookImportStore } from '@/stores/book-import-store';
 import AppButton from '@/components/ui/AppButton/AppButton';
@@ -7,12 +9,13 @@ import { LOG_MESSAGES } from '@/constants/log-messages';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { pickBookFiles } from '@/services/book-file-picker';
 import { BookImportError } from '@/services/book-import-error';
+import { reportBookImportFailure } from '@/services/report-book-import-failure';
 import { importSelectedBooks } from '@/services/import-selected-books';
 import { runLibraryOperation } from '@/services/library-operation';
 import { useAuthStore } from '@/stores/auth-store';
 import { useLibraryStore } from '@/stores/library-store';
 import { BottomSheet, BottomSheetView } from '@expo/ui/community/bottom-sheet';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { styles } from './styles';
 
@@ -29,53 +32,89 @@ const ImportBottomSheet = () => {
   useEffect(() => () => importController.current?.abort(), []);
 
   const sheetRef = useRef<BottomSheet>(null);
-  const handlePress = (type: 'audio/mpeg' | 'application/zip') => {
-    void runLibraryOperation(async () => {
-      const controller = new AbortController();
-      const importId = randomUUID();
-      let cleanupPreviewFiles: (() => void) | undefined;
-      importController.current = controller;
-      setIsImporting(true);
-      sheetRef.current?.close();
-      try {
-        const files = await pickBookFiles(type);
-        if (files.length === 0) return;
-        useBookImportStore.getState().startImport(importId, userId ?? '', files[0].name);
+  const retryParams = useLocalSearchParams<{
+    retryImport?: string | string[];
+    importType?: string | string[];
+  }>();
+  const consumedRetry = useRef<string | undefined>(undefined);
+  const handlePress = useCallback(
+    (type: 'audio/mpeg' | 'application/zip') => {
+      let savedBooks = 0;
+      void runLibraryOperation(async () => {
+        const controller = new AbortController();
+        const importId = randomUUID();
+        let cleanupPreviewFiles: (() => void) | undefined;
+        let reportedError: BookImportError | undefined;
+        importController.current = controller;
+        setIsImporting(true);
+        sheetRef.current?.close();
         try {
-          await importSelectedBooks(userId ?? '', files, type, {
-            signal: controller.signal,
-            onStageChange: (stage) => setIsSaving(stage === 'saving'),
-            onUpdate: (update) => useBookImportStore.getState().updateImport(importId, update),
-            deferPreviewCleanup: (cleanup) => {
-              cleanupPreviewFiles = cleanup;
-            },
-          });
+          const files = await pickBookFiles(type);
+          if (files.length === 0) return;
+          useBookImportStore.getState().startImport(importId, userId ?? '', files[0].name);
+          try {
+            const result = await importSelectedBooks(userId ?? '', files, type, {
+              signal: controller.signal,
+              onStageChange: (stage) => setIsSaving(stage === 'saving'),
+              onUpdate: (update) => useBookImportStore.getState().updateImport(importId, update),
+              onIssue: (code) => {
+                reportedError ??= new BookImportError(code);
+              },
+              deferPreviewCleanup: (cleanup) => {
+                cleanupPreviewFiles = cleanup;
+              },
+            });
+            savedBooks = result.savedBooks;
+            if (result.failedBooks || reportedError)
+              throw reportedError ?? new BookImportError(APP_ERROR_CODES.importFileSaveFailed);
+          } finally {
+            if (userId && useAuthStore.getState().user?.uid === userId) await fetchBooks(userId);
+          }
+          if (!userId || useAuthStore.getState().user?.uid !== userId) return;
+          return userId;
         } finally {
-          if (userId && useAuthStore.getState().user?.uid === userId) await fetchBooks(userId);
+          useBookImportStore.getState().clearImport(importId);
+          let cleanupError: BookImportError | undefined;
+          try {
+            cleanupPreviewFiles?.();
+          } catch (error) {
+            console.warn(LOG_MESSAGES.bookImport.workspaceCleanupFailed, error);
+            cleanupError = new BookImportError(APP_ERROR_CODES.importCleanupFailed, error);
+          }
+          importController.current = null;
+          setIsImporting(false);
+          setIsSaving(false);
+          if (cleanupError) throw cleanupError;
         }
-        if (!userId || useAuthStore.getState().user?.uid !== userId) return;
-        return userId;
-      } finally {
-        useBookImportStore.getState().clearImport(importId);
-        try {
-          cleanupPreviewFiles?.();
-        } catch (error) {
-          console.warn(LOG_MESSAGES.bookImport.workspaceCleanupFailed, error);
-        }
-        importController.current = null;
-        setIsImporting(false);
-        setIsSaving(false);
-      }
-    })
-      .then((importedForUserId) => {
-        if (importedForUserId) useLibraryStore.getState().fetchMissingCovers(importedForUserId);
       })
-      .catch((error) => {
-        if (error instanceof BookImportError && error.code === APP_ERROR_CODES.importCancelled)
-          return;
-        console.error(LOG_MESSAGES.bookImport.preparationFailed, error);
-      });
-  };
+        .then((importedForUserId) => {
+          if (importedForUserId) useLibraryStore.getState().fetchMissingCovers(importedForUserId);
+        })
+        .catch((error) => {
+          if (!reportBookImportFailure(error, type)) return;
+          if (userId && useAuthStore.getState().user?.uid === userId) {
+            router.push({
+              pathname: '/import-error',
+              params: getImportErrorParams(error, type, savedBooks),
+            });
+          }
+        });
+    },
+    [fetchBooks, userId],
+  );
+
+  const retryId = Array.isArray(retryParams.retryImport)
+    ? retryParams.retryImport[0]
+    : retryParams.retryImport;
+  const retryType = Array.isArray(retryParams.importType)
+    ? retryParams.importType[0]
+    : retryParams.importType;
+  useEffect(() => {
+    if (!retryId || consumedRetry.current === retryId) return;
+    consumedRetry.current = retryId;
+    router.setParams({ retryImport: undefined, importType: undefined });
+    handlePress(retryType === 'application/zip' ? 'application/zip' : 'audio/mpeg');
+  }, [retryId, retryType, handlePress]);
   return (
     <View style={{ width: '100%' }}>
       <View style={localStyles.buttonContainer}>

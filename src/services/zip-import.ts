@@ -5,7 +5,7 @@ import { Directory, File, FileMode, Paths } from 'expo-file-system';
 import { BOOK_IMPORT_CONFIG } from '@/constants/book-import-config';
 import { APP_ERROR_CODES } from '@/constants/errors';
 import { openAudioFileReader } from './audio-file-reader';
-import { assertImportNotAborted, BookImportError } from './book-import-error';
+import { assertImportNotAborted, assertImportLimit, BookImportError } from './book-import-error';
 import { extractZip } from './zip-reader';
 import { createNativeZipExtractor } from './zip-native';
 import type { ZipImportCallbacks } from './book-import.types';
@@ -56,8 +56,7 @@ export async function prepareZipImport(
   const source = new File(asset.uri);
   if (!source.exists || source.size <= 0)
     throw new BookImportError(APP_ERROR_CODES.importInvalidZip);
-  if (source.size > BOOK_IMPORT_CONFIG.maxZipBytes)
-    throw new BookImportError(APP_ERROR_CODES.importLimitExceeded);
+  assertImportLimit(source.size, 'maxZipBytes');
   const root = getImportWorkspaceRoot();
   root.create({ intermediates: true, idempotent: true });
   const workspace = new Directory(root, randomUUID());

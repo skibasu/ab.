@@ -25,6 +25,10 @@ export default function AppLayout() {
         }}
       />
       <Stack.Screen
+        name="import-error"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="playing"
         options={{
           headerShown: false,

@@ -6,6 +6,9 @@ export const APP_ERROR_CODES = {
   googleSignInNoToken: 'app/google-sign-in-no-token',
   verificationUserMissing: 'app/verification-user-missing',
   passwordResetCooldown: 'app/password-reset-cooldown',
+  importFailed: 'import/failed',
+  importFileReadFailed: 'import/file-read-failed',
+  importFileSaveFailed: 'import/file-save-failed',
   importCancelled: 'import/cancelled',
   importLimitExceeded: 'import/limit-exceeded',
   importInvalidZip: 'import/invalid-zip',
@@ -19,6 +22,9 @@ export const APP_ERROR_CODES = {
 
 /** Technical import failures. UI messages are kept separate from these error codes. */
 export const BOOK_IMPORT_ERROR_MESSAGES = {
+  [APP_ERROR_CODES.importFailed]: 'Could not finish the selected file import.',
+  [APP_ERROR_CODES.importFileReadFailed]: 'Some audio files could not be read or compared.',
+  [APP_ERROR_CODES.importFileSaveFailed]: 'Some audio files could not be saved.',
   [APP_ERROR_CODES.importCancelled]: 'The import was cancelled before it could finish.',
   [APP_ERROR_CODES.importLimitExceeded]: 'The selected files exceed an import or buffer limit.',
   [APP_ERROR_CODES.importInvalidZip]: 'The ZIP archive is damaged or contains unsafe entries.',

@@ -119,18 +119,22 @@ test('different-sized files need no digest and unreadable comparisons are report
 });
 
 const { importBook } = await import('../src/services/book-importer.ts');
+const { APP_ERROR_CODES: codes } = await import('../src/constants/errors.ts');
 test('only a fully verified book can become a completed archive dependency', async () => {
   prepare();
   files.set('/documents/old.mp3', 'same-audio');
   files.set('/cache/duplicate.mp3', 'same-audio');
   files.set('/cache/new.mp3', 'other-data');
   const verified = [];
+  const issues = [];
   const run = (uri) =>
     importBook(
       'account-a',
       { title: 'Book', author: 'Author', files: [selected(uri)] },
       undefined,
       (id) => verified.push(id),
+      undefined,
+      (code) => issues.push(code),
     );
   assert.equal(await run('/cache/duplicate.mp3'), null);
   assert.deepEqual(verified, ['book-a']);
@@ -138,6 +142,7 @@ test('only a fully verified book can become a completed archive dependency', asy
   skippedCopies = [selected('/cache/new.mp3')];
   await run('/cache/new.mp3');
   assert.deepEqual(verified, []);
+  assert.deepEqual(issues, [codes.importFileSaveFailed]);
   skippedCopies = [];
   await run('/cache/new.mp3');
   assert.deepEqual(verified, ['book-a']);

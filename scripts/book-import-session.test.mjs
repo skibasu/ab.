@@ -336,3 +336,29 @@ test('cover files can outlive service cleanup until the library view has refresh
     true,
   );
 });
+
+test('unreadable parts are reported to the UI while valid parts can still commit', async (t) => {
+  prepare(t);
+  metadataHook = (files) => (files[0].name === 'b.mp3' ? [] : undefined);
+  const issues = [];
+  const result = await importSelectedBooks('account-a', archive, 'application/zip', {
+    onIssue: (code) => issues.push(code),
+  });
+  assert.deepEqual(issues, [codes.importFileReadFailed]);
+  assert.deepEqual(result, { savedBooks: 1, failedBooks: 0 });
+  assert.equal(pickerCleanupCount, 1);
+});
+
+test('direct MP3 size rejection includes enough context for a specific error screen', async (t) => {
+  prepare(t);
+  directSize = BOOK_IMPORT_CONFIG.maxDirectMp3Bytes + 100;
+  await assert.rejects(importSelectedBooks('account-a', archive, 'audio/mpeg'), (error) => {
+    assert.equal(error.code, codes.importLimitExceeded);
+    assert.deepEqual(error.details, {
+      limit: 'maxDirectMp3Bytes',
+      maximum: BOOK_IMPORT_CONFIG.maxDirectMp3Bytes,
+      actual: directSize,
+    });
+    return true;
+  });
+});

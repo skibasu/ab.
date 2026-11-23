@@ -4,7 +4,12 @@ import { configure, Reader, Writer, ZipReader, type Entry } from '@zip.js/zip.js
 import { BOOK_IMPORT_CONFIG, type BookImportConfig } from '@/constants/book-import-config';
 import { APP_ERROR_CODES } from '@/constants/errors';
 import type { AudioFileReader } from './audio-file-reader.types';
-import { assertImportNotAborted, BookImportError } from './book-import-error';
+import {
+  assertImportNotAborted,
+  assertImportLimit,
+  isBookImportError,
+  BookImportError,
+} from './book-import-error';
 
 configure({
   useWebWorkers: false,
@@ -59,9 +64,7 @@ class ZipRangeReader extends Reader<null> {
     ) {
       throw new BookImportError(APP_ERROR_CODES.importInvalidZip);
     }
-    if (length > this.limits.maxMetadataReadBytes) {
-      throw new BookImportError(APP_ERROR_CODES.importLimitExceeded);
-    }
+    assertImportLimit(length, 'maxMetadataReadBytes', this.limits);
     const bytes = await this.source.read(offset, length);
     assertImportNotAborted(this.signal);
     if (bytes.length !== Math.min(length, this.size - offset)) {
@@ -133,8 +136,7 @@ export async function extractZip(
   if (!Number.isSafeInteger(source.size) || source.size <= 0) {
     throw new BookImportError(APP_ERROR_CODES.importInvalidZip);
   }
-  if (source.size > limits.maxZipBytes)
-    throw new BookImportError(APP_ERROR_CODES.importLimitExceeded);
+  assertImportLimit(source.size, 'maxZipBytes', limits);
   const zip = new ZipReader(new ZipRangeReader(source, limits, options.signal), {
     strictness: 'strict',
     filenameValidation: 'strict',
@@ -155,13 +157,9 @@ export async function extractZip(
       manifest.entries++;
       manifest.totalBytes += entry.uncompressedSize;
       if (!entry.directory && /\.mp3$/i.test(entry.filename)) allMp3Files++;
-      if (
-        manifest.entries > limits.maxArchiveEntries ||
-        allMp3Files > limits.maxMp3Files ||
-        manifest.totalBytes > limits.maxUncompressedBytes
-      ) {
-        throw new BookImportError(APP_ERROR_CODES.importLimitExceeded);
-      }
+      assertImportLimit(manifest.entries, 'maxArchiveEntries', limits);
+      assertImportLimit(allMp3Files, 'maxMp3Files', limits);
+      assertImportLimit(manifest.totalBytes, 'maxUncompressedBytes', limits);
       if (isAudio(entry)) {
         manifest.mp3Files++;
         manifest.audioBytes += entry.uncompressedSize;
@@ -196,9 +194,7 @@ export async function extractZip(
           assertImportNotAborted(options.signal);
           entryWritten += bytes.length;
           totalWritten += bytes.length;
-          if (totalWritten > limits.maxUncompressedBytes) {
-            throw new BookImportError(APP_ERROR_CODES.importLimitExceeded);
-          }
+          assertImportLimit(totalWritten, 'maxUncompressedBytes', limits);
           if (entryWritten > entry.uncompressedSize) {
             throw new BookImportError(APP_ERROR_CODES.importInvalidZip);
           }
@@ -219,7 +215,7 @@ export async function extractZip(
     return manifest;
   } catch (error) {
     assertImportNotAborted(options.signal);
-    if (error instanceof BookImportError) throw error;
+    if (isBookImportError(error)) throw error;
     throw new BookImportError(APP_ERROR_CODES.importInvalidZip, error);
   } finally {
     await zip.close();

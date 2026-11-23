@@ -1,12 +1,16 @@
 import type { DocumentPickerAsset } from 'expo-document-picker';
 import { File } from 'expo-file-system';
 
-import { BOOK_IMPORT_CONFIG } from '@/constants/book-import-config';
 import { APP_ERROR_CODES } from '@/constants/errors';
 import { LOG_MESSAGES } from '@/constants/log-messages';
 import { useAuthStore } from '@/stores/auth-store';
 import { groupFiles } from '@/utils/group-files';
-import { assertImportNotAborted, BookImportError } from './book-import-error';
+import {
+  assertImportNotAborted,
+  assertImportLimit,
+  BookImportError,
+  type BookImportErrorCode,
+} from './book-import-error';
 import { importBook } from './book-importer';
 import type { BookFileWithMetadata } from './book-metadata';
 import type { BookImportUpdate } from './book-import.types';
@@ -25,6 +29,7 @@ type ImportOptions = {
   onStageChange?: (stage: BookImportStage) => void;
   onUpdate?: (update: BookImportUpdate) => void;
   deferPreviewCleanup?: (cleanup: () => void) => void;
+  onIssue?: (code: BookImportErrorCode) => void;
 };
 
 /** The caller holds runLibraryOperation while selecting, preparing and saving files. */
@@ -62,14 +67,11 @@ export async function importSelectedBooks(
     if (!files.length) return { savedBooks: 0, failedBooks: 0 };
     let audioFiles: DocumentPickerAsset[];
     if (type === 'application/zip') {
-      if (files.length > BOOK_IMPORT_CONFIG.maxZipFiles) {
-        throw new BookImportError(APP_ERROR_CODES.importLimitExceeded);
-      }
+      assertImportLimit(files.length, 'maxZipFiles');
       const source = new File(files[0].uri);
       if (!source.exists || !Number.isSafeInteger(source.size) || source.size <= 0)
         throw new BookImportError(APP_ERROR_CODES.importInvalidZip);
-      if (source.size > BOOK_IMPORT_CONFIG.maxZipBytes)
-        throw new BookImportError(APP_ERROR_CODES.importLimitExceeded);
+      assertImportLimit(source.size, 'maxZipBytes');
       try {
         zipIdentity = { digest: await source.digest('SHA-256'), size: source.size };
         assertActive();
@@ -94,9 +96,7 @@ export async function importSelectedBooks(
       });
       audioFiles = zip.files;
     } else {
-      if (files.length > BOOK_IMPORT_CONFIG.maxMp3Files) {
-        throw new BookImportError(APP_ERROR_CODES.importLimitExceeded);
-      }
+      assertImportLimit(files.length, 'maxMp3Files');
       let bytes = 0;
       audioFiles = [];
       for (const asset of files) {
@@ -108,6 +108,7 @@ export async function importSelectedBooks(
           bytes += file.size;
           audioFiles.push(asset);
         } catch (error) {
+          options.onIssue?.(APP_ERROR_CODES.importFileReadFailed);
           console.warn(
             LOG_MESSAGES.bookImport.fileMetadataSkipped,
             { name: asset.name, uri: asset.uri },
@@ -115,9 +116,7 @@ export async function importSelectedBooks(
           );
         }
       }
-      if (bytes > BOOK_IMPORT_CONFIG.maxDirectMp3Bytes) {
-        throw new BookImportError(APP_ERROR_CODES.importLimitExceeded);
-      }
+      assertImportLimit(bytes, 'maxDirectMp3Bytes');
       assertImportDiskSpace(bytes);
       if (!audioFiles.length) throw new BookImportError(APP_ERROR_CODES.importNoAudio);
     }
@@ -128,7 +127,7 @@ export async function importSelectedBooks(
       if (record) {
         metadata.push(record);
         await previews.prepare(file);
-      }
+      } else options.onIssue?.(APP_ERROR_CODES.importFileReadFailed);
       update({ stage: 'metadata', progress: 65 + (20 * (index + 1)) / audioFiles.length });
     }
     assertActive();
@@ -154,6 +153,7 @@ export async function importSelectedBooks(
             (id) => verifiedBookIds.push(id),
             (fraction) =>
               update({ stage: 'saving', progress: 85 + (14 * (index + fraction)) / books.length }),
+            options.onIssue,
           )
         )
           result.savedBooks++;
