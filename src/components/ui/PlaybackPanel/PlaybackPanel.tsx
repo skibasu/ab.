@@ -1,20 +1,23 @@
-import { Image } from 'expo-image';
-import { Pressable, Text, View } from 'react-native';
-
-import Icon from '@/components/ui/Icon/Icon';
-import { icons } from '@/constants/icons';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import type { LibraryTrack } from '@/services/book-repository';
-import { formatTrackDuration } from '@/utils/format-track-duration';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { File, Paths } from 'expo-file-system';
+import { View } from 'react-native';
+
+import { useAppTheme } from '@/hooks/use-app-theme';
+import type { LibraryTrack } from '@/services/book-repository';
+import BackButton from './BackButton/BackButton';
+import NextButton from './NextButton/NextButton';
+import PlayButton from './PlayButton/PlayButton';
+import PlayHeader from './PlayHeader/PlayHeader';
+import PlayProgressBar from './PlayProgressBar/PlayProgressBar';
+import PlaySpeed from './PlaySpeed/PlaySpeed';
+import PlayTimer from './PlayTimer/PlayTimer';
+import PlayTimes from './PlayTimes/PlayTimes';
 import { styles } from './styles';
 
 type PlaybackPanelProps = {
   track: LibraryTrack;
 };
 
-/** Presentation only. Audio controls remain disabled until playback is implemented. */
 const PlaybackPanel = ({ track }: PlaybackPanelProps) => {
   const audioSource = {
     uri: new File(Paths.document, track.filePath).uri,
@@ -30,105 +33,26 @@ const PlaybackPanel = ({ track }: PlaybackPanelProps) => {
 
   return (
     <View style={localStyles.panel}>
-      <View style={localStyles.heading}>
-        <Text style={localStyles.number}>{String(track.position + 1).padStart(2, '0')}</Text>
-        <Text style={localStyles.title}>{track.title}</Text>
-      </View>
-      <View
-        accessible
-        accessibilityLabel="Playback position"
-        accessibilityRole="progressbar"
-        accessibilityValue={{ min: 0, max: 100, now: 0 }}
-        style={localStyles.seek}
-      >
-        <View style={localStyles.track} />
-        <View style={localStyles.thumb} />
-      </View>
-      <View style={localStyles.times}>
-        <Text style={localStyles.time}>{status.currentTime.toFixed(2)}</Text>
-        <Text style={localStyles.time}>
-          {track.duration === null ? '—' : `−${formatTrackDuration(track.duration)}`}
-        </Text>
-      </View>
+      <PlayHeader
+        position={track.position}
+        title={track.title}
+      />
+      <PlayProgressBar progress={0} />
+      <PlayTimes
+        currentTime={status.currentTime}
+        duration={track.duration}
+      />
       <View style={localStyles.controls}>
-        <Pressable
-          accessibilityLabel="Back 15 seconds"
-          accessibilityRole="button"
-          accessibilityState={{ disabled: true }}
-          onPress={back}
-          style={localStyles.skipButton}
-        >
-          <Icon
-            name="playerBack15"
-            width={38}
-            height={38}
-          />
-          <Text style={localStyles.skipLabel}>15</Text>
-        </Pressable>
-        <Pressable
-          accessibilityLabel="Play"
-          accessibilityRole="button"
-          accessibilityState={{ disabled: true }}
+        <BackButton onPress={back} />
+        <PlayButton
+          playing={status.playing}
           onPress={togglePlay}
-          style={localStyles.playButton}
-        >
-          {status.playing ? (
-            <Image
-              source={icons.playerPause}
-              style={localStyles.playIcon}
-              accessible={false}
-            />
-          ) : (
-            <Image
-              source={icons.playerPlay}
-              style={localStyles.playIcon}
-              accessible={false}
-            />
-          )}
-        </Pressable>
-        <Pressable
-          accessibilityLabel="Forward 15 seconds"
-          accessibilityRole="button"
-          accessibilityState={{ disabled: true }}
-          onPress={next}
-          style={localStyles.skipButton}
-        >
-          <Icon
-            name="playerForward15"
-            width={38}
-            height={38}
-          />
-          <Text style={localStyles.skipLabel}>15</Text>
-        </Pressable>
+        />
+        <NextButton onPress={next} />
       </View>
       <View style={localStyles.options}>
-        <Pressable
-          accessibilityLabel="Playback speed, 1.0 times"
-          accessibilityRole="button"
-          accessibilityState={{ disabled: true }}
-          disabled
-          style={localStyles.optionTarget}
-        >
-          <View style={localStyles.option}>
-            <Text style={localStyles.optionLabel}>1.0×</Text>
-          </View>
-        </Pressable>
-        <Pressable
-          accessibilityLabel="Sleep timer"
-          accessibilityRole="button"
-          accessibilityState={{ disabled: true }}
-          disabled
-          style={localStyles.optionTarget}
-        >
-          <View style={localStyles.option}>
-            <Icon
-              name="sleep"
-              width={12}
-              height={12}
-            />
-            <Text style={localStyles.optionLabel}>Sleep timer</Text>
-          </View>
-        </Pressable>
+        <PlaySpeed speed={1} />
+        <PlayTimer />
       </View>
     </View>
   );
