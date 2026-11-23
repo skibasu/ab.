@@ -142,3 +142,17 @@ test('only a fully verified book can become a completed archive dependency', asy
   await run('/cache/new.mp3');
   assert.deepEqual(verified, ['book-a']);
 });
+
+test('comparison progress advances for retained files and duplicates', async () => {
+  prepare();
+  files.set('/documents/old.mp3', 'same');
+  files.set('/cache/a.mp3', 'same');
+  files.set('/cache/b.mp3', 'different');
+  const progress = [];
+  await findNewBookFiles(
+    [selected('/cache/a.mp3'), selected('/cache/b.mp3')],
+    [{ filePath: 'old.mp3' }],
+    (fraction) => progress.push(fraction),
+  );
+  assert.deepEqual(progress, [0.5, 1]);
+});

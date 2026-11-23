@@ -19,6 +19,7 @@ let historyHit;
 let historyRecords;
 let verifyCommits;
 let digestHook;
+let previewCleanupCount;
 function changeAccount(uid) {
   account = uid;
   for (const listener of listeners) listener({ user: { uid } });
@@ -42,9 +43,19 @@ const mocks = {
       return () => listeners.delete(callback);
     },
   },
-  async prepareZipImport(asset, signal) {
+  async prepareZipImport(asset, signal, callbacks) {
     assert.equal(asset.name, 'archive.zip');
     await prepareHook?.(signal);
+    if (!signal?.aborted) {
+      callbacks?.onProgress?.(0.1);
+      try {
+        await callbacks?.onPreview?.({ uri: '/workspace/a.mp3', name: 'a.mp3' });
+      } catch (error) {
+        cleanupCount++;
+        throw error;
+      }
+      callbacks?.onProgress?.(1);
+    }
     return {
       files: [
         { uri: '/workspace/a.mp3', name: 'a.mp3' },
@@ -52,6 +63,27 @@ const mocks = {
       ],
       cleanup() {
         cleanupCount++;
+      },
+    };
+  },
+  createBookImportPreviews(publish, assertActive) {
+    const records = new Map();
+    const read = async (file) => {
+      assertActive();
+      if (!records.has(file.uri))
+        records.set(file.uri, (await mocks.readBookFilesMetadata([file]))[0]);
+      assertActive();
+      return records.get(file.uri);
+    };
+    return {
+      read,
+      prepare: async (file) => {
+        await read(file);
+        publish?.({ stage: 'cover' });
+      },
+      prepareCover: async () => null,
+      cleanup() {
+        previewCleanupCount++;
       },
     };
   },
@@ -85,6 +117,7 @@ const modules = {
   '@/stores/auth-store': ['useAuthStore'],
   './zip-import': ['prepareZipImport', 'assertImportDiskSpace', 'cleanupPickerFiles'],
   './book-metadata': ['readBookFilesMetadata'],
+  './book-import-previews': ['createBookImportPreviews'],
   './book-importer': ['importBook'],
   './zip-import-history': ['hasCompletedZip', 'rememberCompletedZip'],
 };
@@ -120,6 +153,7 @@ function prepare(t) {
   historyRecords = [];
   verifyCommits = true;
   digestHook = undefined;
+  previewCleanupCount = 0;
   t.after(() => assert.equal(listeners.size, 0));
 }
 const run = (signal) =>
@@ -264,7 +298,8 @@ test('partial metadata or audio persistence never records a completed ZIP', asyn
   await run();
   assert.deepEqual(historyRecords, []);
   verifyCommits = true;
-  metadataHook = (files) => [{ ...files[0], album: 'Book', artist: 'Author' }];
+  metadataHook = (files) =>
+    files[0].name === 'a.mp3' ? [{ ...files[0], album: 'Book', artist: 'Author' }] : [];
   await run();
   assert.deepEqual(historyRecords, []);
 });
@@ -277,4 +312,27 @@ test('account change during archive fingerprinting prevents extraction and recei
   assert.equal(metadataReads, 0);
   assert.deepEqual(historyRecords, []);
   assert.equal(pickerCleanupCount, 1);
+});
+
+test('cover files can outlive service cleanup until the library view has refreshed', async (t) => {
+  prepare(t);
+  let deferredCleanup;
+  const progress = [];
+  await importSelectedBooks('account-a', archive, 'application/zip', {
+    onUpdate: (update) => {
+      if (update.progress !== undefined) progress.push(update.progress);
+    },
+    deferPreviewCleanup: (cleanup) => {
+      deferredCleanup = cleanup;
+    },
+  });
+  assert.equal(previewCleanupCount, 0);
+  assert.equal(typeof deferredCleanup, 'function');
+  deferredCleanup();
+  assert.equal(previewCleanupCount, 1);
+  assert.equal(progress.at(-1), 100);
+  assert.equal(
+    progress.every((value, index) => index === 0 || value >= progress[index - 1]),
+    true,
+  );
 });

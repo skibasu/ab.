@@ -11,7 +11,8 @@ export const styles = (theme: AppTheme) => ({
       ...theme.textStyles.sectionHeading,
       color: theme.textColor.primary,
       paddingHorizontal: theme.spacing[6],
-      paddingVertical: theme.spacing[2],
+      paddingBottom: theme.spacing[4],
+      paddingTop: theme.spacing[2],
     },
     content: {
       paddingHorizontal: theme.spacing[6],

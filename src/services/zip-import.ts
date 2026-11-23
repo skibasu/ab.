@@ -8,8 +8,9 @@ import { openAudioFileReader } from './audio-file-reader';
 import { assertImportNotAborted, BookImportError } from './book-import-error';
 import { extractZip } from './zip-reader';
 import { createNativeZipExtractor } from './zip-native';
+import type { ZipImportCallbacks } from './book-import.types';
 
-const getWorkspaceRoot = () => new Directory(Paths.cache, 'book-import-work');
+export const getImportWorkspaceRoot = () => new Directory(Paths.cache, 'book-import-work');
 
 export function assertImportDiskSpace(bytes: number): void {
   const available = Paths.availableDiskSpace;
@@ -40,7 +41,7 @@ export function cleanupPickerFiles(assets: DocumentPickerAsset[]): void {
 
 /** Call under runLibraryOperation, so startup cleanup never races an active extraction. */
 export function cleanupImportWorkspaces(): void {
-  const root = getWorkspaceRoot();
+  const root = getImportWorkspaceRoot();
   if (root.exists) root.delete();
 }
 
@@ -49,6 +50,7 @@ export type PreparedZip = { files: DocumentPickerAsset[]; cleanup: () => void };
 export async function prepareZipImport(
   asset: DocumentPickerAsset,
   signal?: AbortSignal,
+  callbacks: ZipImportCallbacks = {},
 ): Promise<PreparedZip> {
   assertImportNotAborted(signal);
   const source = new File(asset.uri);
@@ -56,7 +58,7 @@ export async function prepareZipImport(
     throw new BookImportError(APP_ERROR_CODES.importInvalidZip);
   if (source.size > BOOK_IMPORT_CONFIG.maxZipBytes)
     throw new BookImportError(APP_ERROR_CODES.importLimitExceeded);
-  const root = getWorkspaceRoot();
+  const root = getImportWorkspaceRoot();
   root.create({ intermediates: true, idempotent: true });
   const workspace = new Directory(root, randomUUID());
   workspace.create();
@@ -75,10 +77,14 @@ export async function prepareZipImport(
     assertImportNotAborted(signal);
     const reader = openAudioFileReader(archive.uri);
     const files: DocumentPickerAsset[] = [];
-    const nativeExtract = createNativeZipExtractor(archive.uri, workspace.uri, signal);
+    const nativeExtract = createNativeZipExtractor(archive.uri, workspace.uri, signal, callbacks);
     try {
       await extractZip(reader, {
         signal,
+        onProgress: callbacks.onProgress,
+        onAudioExtracted: async () => {
+          if (files[0]) await callbacks.onPreview?.(files[0]);
+        },
         onManifest: ({ audioBytes }) => assertImportDiskSpace(audioBytes * 2),
         extractEntries: nativeExtract
           ? async (entries) => {

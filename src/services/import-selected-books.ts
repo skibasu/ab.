@@ -8,7 +8,9 @@ import { useAuthStore } from '@/stores/auth-store';
 import { groupFiles } from '@/utils/group-files';
 import { assertImportNotAborted, BookImportError } from './book-import-error';
 import { importBook } from './book-importer';
-import { readBookFilesMetadata } from './book-metadata';
+import type { BookFileWithMetadata } from './book-metadata';
+import type { BookImportUpdate } from './book-import.types';
+import { createBookImportPreviews } from './book-import-previews';
 import { hasCompletedZip, rememberCompletedZip } from './zip-import-history';
 import {
   assertImportDiskSpace,
@@ -18,7 +20,12 @@ import {
 } from './zip-import';
 
 export type BookImportStage = 'preparing' | 'saving';
-type ImportOptions = { signal?: AbortSignal; onStageChange?: (stage: BookImportStage) => void };
+type ImportOptions = {
+  signal?: AbortSignal;
+  onStageChange?: (stage: BookImportStage) => void;
+  onUpdate?: (update: BookImportUpdate) => void;
+  deferPreviewCleanup?: (cleanup: () => void) => void;
+};
 
 /** The caller holds runLibraryOperation while selecting, preparing and saving files. */
 export async function importSelectedBooks(
@@ -38,12 +45,20 @@ export async function importSelectedBooks(
     if (!userId || useAuthStore.getState().user?.uid !== userId) cancel();
     assertImportNotAborted(controller.signal);
   };
+  let progress = 0;
+  const update = (value: BookImportUpdate) => {
+    assertActive();
+    progress = Math.max(progress, value.progress ?? progress);
+    options.onUpdate?.({ ...value, progress });
+  };
+  const previews = createBookImportPreviews(update, assertActive, controller.signal);
   let zip: PreparedZip | undefined;
   let zipIdentity: { digest: string; size: number } | undefined;
 
   try {
     assertActive();
     options.onStageChange?.('preparing');
+    update({ stage: 'preparing', progress: 0 });
     if (!files.length) return { savedBooks: 0, failedBooks: 0 };
     let audioFiles: DocumentPickerAsset[];
     if (type === 'application/zip') {
@@ -60,6 +75,7 @@ export async function importSelectedBooks(
         assertActive();
         if (await hasCompletedZip(userId, zipIdentity.digest, zipIdentity.size, assertActive)) {
           assertActive();
+          update({ stage: 'complete', progress: 100 });
           console.info(LOG_MESSAGES.bookImport.duplicateZipSkipped, { name: files[0].name });
           return { savedBooks: 0, failedBooks: 0 };
         }
@@ -67,7 +83,15 @@ export async function importSelectedBooks(
         assertActive();
         console.warn(LOG_MESSAGES.bookImport.zipHistoryUnavailable, { name: files[0].name }, error);
       }
-      zip = await prepareZipImport(files[0], controller.signal);
+      update({ stage: 'extracting', progress: 5 });
+      zip = await prepareZipImport(files[0], controller.signal, {
+        onProgress: (fraction) =>
+          update({ stage: 'extracting', progress: 5 + 60 * Math.max(0, Math.min(1, fraction)) }),
+        onPreview: async (file) => {
+          await previews.prepare(file);
+          update({ stage: 'extracting' });
+        },
+      });
       audioFiles = zip.files;
     } else {
       if (files.length > BOOK_IMPORT_CONFIG.maxMp3Files) {
@@ -98,24 +122,47 @@ export async function importSelectedBooks(
       if (!audioFiles.length) throw new BookImportError(APP_ERROR_CODES.importNoAudio);
     }
     assertActive();
-    const metadata = await readBookFilesMetadata(audioFiles, controller.signal);
+    const metadata: BookFileWithMetadata[] = [];
+    for (const [index, file] of audioFiles.entries()) {
+      const record = await previews.read(file);
+      if (record) {
+        metadata.push(record);
+        await previews.prepare(file);
+      }
+      update({ stage: 'metadata', progress: 65 + (20 * (index + 1)) / audioFiles.length });
+    }
     assertActive();
     if (!metadata.length) throw new BookImportError(APP_ERROR_CODES.importNoAudio);
     const books = groupFiles(metadata);
+    for (const book of books) {
+      const cover = await previews.prepareCover(book);
+      if (cover) book.files = book.files.map((file) => ({ ...file, cover }));
+    }
     options.onStageChange?.('saving');
+    update({ stage: 'saving', progress: 85 });
     const result = { savedBooks: 0, failedBooks: 0 };
     const verifiedBookIds: string[] = [];
     // Sequential commits preserve source order and keep resource usage bounded.
-    for (const book of books) {
+    for (const [index, book] of books.entries()) {
       assertActive();
       try {
-        if (await importBook(userId, book, assertActive, (id) => verifiedBookIds.push(id)))
+        if (
+          await importBook(
+            userId,
+            book,
+            assertActive,
+            (id) => verifiedBookIds.push(id),
+            (fraction) =>
+              update({ stage: 'saving', progress: 85 + (14 * (index + fraction)) / books.length }),
+          )
+        )
           result.savedBooks++;
       } catch (error) {
         assertActive();
         result.failedBooks++;
         console.error(LOG_MESSAGES.bookImport.bookSaveFailed, { title: book.title }, error);
       }
+      update({ stage: 'saving', progress: 85 + (14 * (index + 1)) / books.length });
     }
     if (
       zipIdentity &&
@@ -136,6 +183,7 @@ export async function importSelectedBooks(
         console.warn(LOG_MESSAGES.bookImport.zipHistoryUnavailable, { name: files[0].name }, error);
       }
     }
+    update({ stage: 'complete', progress: 100 });
     return result;
   } finally {
     unsubscribe();
@@ -143,6 +191,12 @@ export async function importSelectedBooks(
     const cleanupErrors: unknown[] = [];
     try {
       zip?.cleanup();
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+    try {
+      if (options.deferPreviewCleanup) options.deferPreviewCleanup(() => previews.cleanup());
+      else previews.cleanup();
     } catch (error) {
       cleanupErrors.push(error);
     }

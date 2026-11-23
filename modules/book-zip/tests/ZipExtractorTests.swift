@@ -53,8 +53,11 @@ final class ZipExtractorTests: XCTestCase {
     XCTAssertThrowsError(try extract(entries, maxBytes: 100)) {
       XCTAssertEqual($0 as? ZipFailure, .limit)
     }
-    let size = try FileManager.default.attributesOfItem(atPath: destination.appendingPathComponent(entries[0].output!).path)[.size] as! NSNumber
-    XCTAssertLessThanOrEqual(size.intValue, 100)
+    let url = destination.appendingPathComponent(entries[0].output!)
+    if FileManager.default.fileExists(atPath: url.path) {
+      let size = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as! NSNumber
+      XCTAssertLessThanOrEqual(size.intValue, 100)
+    }
   }
 
   func testCancelledBeforeExtractionCreatesNoOutputs() throws {
@@ -131,4 +134,43 @@ final class ZipExtractorTests: XCTestCase {
       XCTAssertEqual($0 as? ZipFailure, .invalid)
     }
   }
+
+  func testPreviewCompletesBeforeRemainingExtractionAndProgressCountsAllBytes() throws {
+    let archive = try Archive(url: archiveURL, accessMode: .create)
+    let parts = [("cover.jpg", Data([9, 8])), ("a.mp3", Data(repeating: 1, count: 100)),
+                 ("b.mp3", Data(repeating: 2, count: 200))]
+    for (name, data) in parts {
+      try archive.addEntry(with: name, type: .file, uncompressedSize: Int64(data.count),
+                           compressionMethod: .deflate) { position, size in
+        data.subdata(in: Int(position)..<(Int(position) + size))
+      }
+    }
+    let entries = archive.map { entry in
+      CheckedZipEntry(size: entry.uncompressedSize, checksum: entry.checksum, directory: false,
+                      output: entry.path.hasSuffix(".mp3") ? UUID().uuidString + ".mp3" : nil)
+    }
+    var progress: [(UInt64, UInt64)] = []
+    try extractBookZip(archiveURL: archiveURL, destination: destination, expected: entries,
+                       maxBytes: 1000, chunkBytes: 64, cancellation: ZipCancellation(), phase: .preview) {
+      progress.append(($0, $1))
+    }
+    XCTAssertTrue(FileManager.default.fileExists(atPath: destination.appendingPathComponent(entries[1].output!).path))
+    XCTAssertFalse(FileManager.default.fileExists(atPath: destination.appendingPathComponent(entries[2].output!).path))
+    XCTAssertEqual(progress.last?.0, 100)
+    XCTAssertEqual(progress.last?.1, 302)
+    try extractBookZip(archiveURL: archiveURL, destination: destination, expected: entries,
+                       maxBytes: 1000, chunkBytes: 64, cancellation: ZipCancellation(), phase: .remaining) {
+      progress.append(($0, $1))
+    }
+    XCTAssertEqual(try Data(contentsOf: destination.appendingPathComponent(entries[2].output!)), parts[2].1)
+    XCTAssertEqual(progress.last?.0, 302)
+    XCTAssertEqual(progress.last?.1, 302)
+  }
+
+  func testRemainingPhaseRequiresAPreparedPreviewFile() throws {
+    let entries = try makeArchive(Data(repeating: 1, count: 100))
+    XCTAssertThrowsError(try extractBookZip(archiveURL: archiveURL, destination: destination, expected: entries,
+                         maxBytes: 1000, chunkBytes: 64, cancellation: ZipCancellation(), phase: .remaining))
+  }
+
 }

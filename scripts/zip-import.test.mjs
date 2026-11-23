@@ -445,3 +445,26 @@ test('native extraction receives only validated entries and bypasses JS decoding
   );
   assert.equal(delegated, false);
 });
+
+test('JS fallback awaits the first audio preview before opening subsequent outputs', async () => {
+  const bytes = await makeZip([
+    ['before.txt', 'ignored'],
+    ['a.mp3', 'first'],
+    ['b.mp3', 'second'],
+  ]);
+  const fractions = [];
+  let previewCalls = 0;
+  const run = readZip(bytes, {
+    onProgress: (fraction) => fractions.push(fraction),
+    async onAudioExtracted() {
+      previewCalls++;
+      assert.equal(run.outputs.has('a.mp3'), true);
+      assert.equal(run.outputs.has('b.mp3'), false);
+      await Promise.resolve();
+    },
+  });
+  await run.result;
+  assert.equal(previewCalls, 1);
+  assert.equal(run.outputs.has('b.mp3'), true);
+  assert.equal(fractions.at(-1), 1);
+});

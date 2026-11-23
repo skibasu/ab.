@@ -32,6 +32,8 @@ type ZipOptions = {
   onManifest?: (manifest: ZipManifest) => void | Promise<void>;
   openOutput: (filename: string) => ZipOutput;
   extractEntries?: (entries: NativeZipEntry[]) => Promise<void>;
+  onProgress?: (fraction: number) => void;
+  onAudioExtracted?: () => Promise<void>;
 };
 
 class ZipRangeReader extends Reader<null> {
@@ -182,7 +184,9 @@ export async function extractZip(
       return manifest;
     }
     let totalWritten = 0;
-    for (const entry of entries) {
+    const firstAudio = entries.find(isAudio)!;
+    const extractionOrder = [firstAudio, ...entries.filter((entry) => entry !== firstAudio)];
+    for (const entry of extractionOrder) {
       assertImportNotAborted(options.signal);
       if (entry.directory) continue;
       const output = isAudio(entry) ? options.openOutput(entry.filename) : undefined;
@@ -199,6 +203,7 @@ export async function extractZip(
             throw new BookImportError(APP_ERROR_CODES.importInvalidZip);
           }
           await output?.write(bytes);
+          options.onProgress?.(manifest.totalBytes ? totalWritten / manifest.totalBytes : 1);
         });
         // Non-audio data is discarded, but still inflated and checked against the real size/CRC.
         await entry.getData(writer);
@@ -208,6 +213,7 @@ export async function extractZip(
       } finally {
         output?.close();
       }
+      if (entry === firstAudio) await options.onAudioExtracted?.();
     }
     assertImportNotAborted(options.signal);
     return manifest;

@@ -117,3 +117,72 @@ test('native statuses retain controlled import error codes', async () => {
     await assert.rejects(makeExtractor()(entries), { code });
   }
 });
+
+test('staged native extraction awaits the cover preview before processing remaining entries', async () => {
+  const calls = [];
+  let listener;
+  let removed = 0;
+  native = {
+    begin() {},
+    cancel() {},
+    addListener(name, callback) {
+      assert.equal(name, 'onProgress');
+      listener = callback;
+      return {
+        remove() {
+          removed++;
+        },
+      };
+    },
+    async extractStage(id, archive, destination, manifest, maxBytes, chunkBytes, phase) {
+      assert.equal(archive, 'file:///work/source.zip');
+      assert.equal(destination, 'file:///work/');
+      assert.equal(manifest.length, 2);
+      assert.equal(maxBytes, limits.maxUncompressedBytes);
+      assert.equal(chunkBytes, limits.chunkBytes);
+      calls.push(phase);
+      listener({ id: 'unrelated-job', written: 100, total: 100 });
+      listener({ id, written: phase === 'preview' ? 50 : 100, total: 100 });
+      return null;
+    },
+  };
+  const fractions = [];
+  const result = await createNativeZipExtractor(
+    'file:///work/source.zip',
+    'file:///work/',
+    undefined,
+    {
+      onProgress: (value) => fractions.push(value),
+      onPreview: async (file) => {
+        assert.equal(file.name, 'part.mp3');
+        assert.deepEqual(calls, ['preview']);
+        await Promise.resolve();
+        calls.push('cover-ready');
+      },
+    },
+  )(entries);
+  assert.equal(result.length, 1);
+  assert.deepEqual(calls, ['preview', 'cover-ready', 'remaining']);
+  assert.deepEqual(fractions, [0.5, 1, 1]);
+  assert.equal(removed, 2);
+});
+
+test('cancelling during preview preparation prevents the remaining native phase', async () => {
+  const phases = [];
+  const controller = new AbortController();
+  native = {
+    begin() {},
+    cancel() {},
+    async extractStage(...args) {
+      phases.push(args.at(-1));
+      return null;
+    },
+  };
+  await assert.rejects(
+    createNativeZipExtractor('file:///work/source.zip', 'file:///work/', controller.signal, {
+      onPreview: async () => controller.abort(),
+    })(entries),
+    { code: codes.importCancelled },
+  );
+  assert.deepEqual(phases, ['preview']);
+});

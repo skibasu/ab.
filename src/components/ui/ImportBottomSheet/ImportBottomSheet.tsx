@@ -1,3 +1,5 @@
+import { randomUUID } from 'expo-crypto';
+import { useBookImportStore } from '@/stores/book-import-store';
 import AppButton from '@/components/ui/AppButton/AppButton';
 import ButtonSelector from '@/components/ui/ButtonSelector/ButtonSelector';
 import { APP_ERROR_CODES } from '@/constants/errors';
@@ -30,16 +32,23 @@ const ImportBottomSheet = () => {
   const handlePress = (type: 'audio/mpeg' | 'application/zip') => {
     void runLibraryOperation(async () => {
       const controller = new AbortController();
+      const importId = randomUUID();
+      let cleanupPreviewFiles: (() => void) | undefined;
       importController.current = controller;
       setIsImporting(true);
       sheetRef.current?.close();
       try {
         const files = await pickBookFiles(type);
         if (files.length === 0) return;
+        useBookImportStore.getState().startImport(importId, userId ?? '', files[0].name);
         try {
           await importSelectedBooks(userId ?? '', files, type, {
             signal: controller.signal,
             onStageChange: (stage) => setIsSaving(stage === 'saving'),
+            onUpdate: (update) => useBookImportStore.getState().updateImport(importId, update),
+            deferPreviewCleanup: (cleanup) => {
+              cleanupPreviewFiles = cleanup;
+            },
           });
         } finally {
           if (userId && useAuthStore.getState().user?.uid === userId) await fetchBooks(userId);
@@ -47,6 +56,12 @@ const ImportBottomSheet = () => {
         if (!userId || useAuthStore.getState().user?.uid !== userId) return;
         return userId;
       } finally {
+        useBookImportStore.getState().clearImport(importId);
+        try {
+          cleanupPreviewFiles?.();
+        } catch (error) {
+          console.warn(LOG_MESSAGES.bookImport.workspaceCleanupFailed, error);
+        }
         importController.current = null;
         setIsImporting(false);
         setIsSaving(false);

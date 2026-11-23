@@ -23,13 +23,13 @@ export const styles = (theme: AppTheme) =>
     },
     selectedNumber: { color: theme.textColor.link },
     title: {
-      ...theme.textStyles.body,
-      fontWeight: theme.fontWeight.medium,
+      ...theme.textStyles.bookTile,
+      fontWeight: theme.fontWeight.regular,
       color: theme.textColor.primary,
       flex: 1,
       minWidth: 0,
     },
-    selectedTitle: { fontWeight: theme.fontWeight.semibold },
+
     duration: {
       ...theme.textStyles.time,
       color: theme.textColor.secondary,

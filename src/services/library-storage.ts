@@ -80,6 +80,7 @@ export async function saveBookFiles(
   book: BookToSave,
   existingBookId?: string,
   assertActive?: () => void,
+  onProgress?: (fraction: number) => void,
 ): Promise<SavedBookFiles | null> {
   assertActive?.();
   if (!userId || userId === '.' || userId === '..' || /[/\\]/.test(userId)) {
@@ -103,7 +104,7 @@ export async function saveBookFiles(
     const skippedFiles: SavedBookFiles['skippedFiles'] = [];
     let cover: BookFileWithMetadata['cover'] = null;
 
-    for (const sourceFile of book.files) {
+    for (const [index, sourceFile] of book.files.entries()) {
       assertActive?.();
       // Generated names avoid collisions between parts with identical source filenames.
       const id = randomUUID();
@@ -122,6 +123,7 @@ export async function saveBookFiles(
           { name: sourceFile.name, uri: sourceFile.uri },
           error,
         );
+        onProgress?.((index + 1) / book.files.length);
         continue;
       }
 
@@ -138,6 +140,7 @@ export async function saveBookFiles(
         uri: destination.uri,
         relativePath: `${relativePath}/${filename}`,
       });
+      onProgress?.((index + 1) / book.files.length);
     }
 
     assertActive?.();

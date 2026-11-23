@@ -1,3 +1,4 @@
+import { assertImportNotAborted } from './book-import-error';
 import { fetch } from 'expo/fetch';
 import { LIBRARY_ERROR_MESSAGES } from '@/constants/errors';
 import { LOG_MESSAGES } from '@/constants/log-messages';
@@ -23,7 +24,9 @@ let nextSearchAt = 0;
 export async function findOpenLibraryCover(
   title: string,
   author: string,
+  signal?: AbortSignal,
 ): Promise<Uint8Array | null> {
+  assertImportNotAborted(signal);
   const normalizedTitle = normalizeName(title);
   const normalizedAuthor = normalizeName(author);
   if (
@@ -44,27 +47,33 @@ export async function findOpenLibraryCover(
   const search = pendingSearch.then(async () => {
     const delay = nextSearchAt - Date.now();
     if (delay > 0) await new Promise<void>((resolve) => setTimeout(resolve, delay));
+    assertImportNotAborted(signal);
     nextSearchAt = Date.now() + SEARCH_INTERVAL_MS;
 
     const params = new URLSearchParams({
       q: query.title,
       lang: 'pl',
-      fields: 'key,title,author_name,cover_i,editions,editions.key,editions.title,editions.cover_i,editions.language',
+      fields:
+        'key,title,author_name,cover_i,editions,editions.key,editions.title,editions.cover_i,editions.language',
       limit: '10',
     });
     console.info(LOG_MESSAGES.bookImport.remoteCoverLookup, query);
-    return request(`https://openlibrary.org/search.json?${params}`, async (response) => {
-      const data: { docs?: SearchResult[] } = await response.json();
-      let workCoverId: number | undefined;
-      for (const work of data.docs ?? []) {
-        if (!work.author_name?.some((name) => normalizeName(name) === normalizedAuthor)) continue;
+    return request(
+      `https://openlibrary.org/search.json?${params}`,
+      async (response) => {
+        const data: { docs?: SearchResult[] } = await response.json();
+        let workCoverId: number | undefined;
+        for (const work of data.docs ?? []) {
+          if (!work.author_name?.some((name) => normalizeName(name) === normalizedAuthor)) continue;
 
-        const edition = work.editions?.docs?.find((item) => matchesCover(item, normalizedTitle));
-        if (edition) return edition.cover_i;
-        if (matchesCover(work, normalizedTitle)) workCoverId ??= work.cover_i;
-      }
-      return workCoverId;
-    });
+          const edition = work.editions?.docs?.find((item) => matchesCover(item, normalizedTitle));
+          if (edition) return edition.cover_i;
+          if (matchesCover(work, normalizedTitle)) workCoverId ??= work.cover_i;
+        }
+        return workCoverId;
+      },
+      signal,
+    );
   });
   pendingSearch = search.then(
     () => undefined,
@@ -84,6 +93,7 @@ export async function findOpenLibraryCover(
       const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
       return isJpeg ? bytes : null;
     },
+    signal,
   );
   if (!cover) console.info(LOG_MESSAGES.bookImport.remoteCoverNotFound, query);
   return cover;
@@ -110,8 +120,12 @@ function matchesCover(book: CoverResult, normalizedTitle: string): boolean {
 async function request<T>(
   url: string,
   read: (response: Awaited<ReturnType<typeof fetch>>) => Promise<T>,
+  signal?: AbortSignal,
 ): Promise<T | null> {
   const controller = new AbortController();
+  const cancel = () => controller.abort();
+  signal?.addEventListener('abort', cancel, { once: true });
+  if (signal?.aborted) cancel();
   const timer = setTimeout(() => controller.abort(), LOOKUP_TIMEOUT_MS);
 
   try {
@@ -122,5 +136,6 @@ async function request<T>(
     return await read(response);
   } finally {
     clearTimeout(timer);
+    signal?.removeEventListener('abort', cancel);
   }
 }

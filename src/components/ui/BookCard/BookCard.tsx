@@ -6,8 +6,10 @@ import { Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-nat
 import { DEFAULT_BOOK_COVER_PATH } from '@/constants/book-cover';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { LibraryBook } from '@/services/book-repository';
+import { bookGroupKey } from '@/utils/group-files';
 import { formatDuration } from '@/utils/format-duration';
 import { styles } from './styles';
+import BookProgressBarLoader from '@/components/ui/BookProgressBarLoader/BookProgressBarLoader';
 
 const sampleCover = require('@/assets/images/sample-cover.png');
 
@@ -19,6 +21,9 @@ export type BookCardProps = {
   showProgress?: boolean;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
+  coverUri?: string | null;
+  coverKey?: string;
+  importProgress?: number;
 };
 
 const BookCard = ({
@@ -29,11 +34,15 @@ const BookCard = ({
   showProgress = true,
   onPress,
   style,
+  coverUri,
+  coverKey,
+  importProgress,
 }: BookCardProps) => {
   const localStyles = styles(useAppTheme());
   const isFull = variant === 'full';
-  const source =
-    !book.coverPath?.trim() || book.coverPath === DEFAULT_BOOK_COVER_PATH
+  const source = coverUri
+    ? { uri: coverUri }
+    : !book.coverPath?.trim() || book.coverPath === DEFAULT_BOOK_COVER_PATH
       ? sampleCover
       : { uri: new File(Paths.document, book.coverPath).uri };
 
@@ -41,7 +50,7 @@ const BookCard = ({
     <Pressable
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={onPress ? `Open ${book.title} by ${book.author}` : undefined}
-      disabled={!onPress}
+      disabled={!onPress || importProgress !== undefined}
       onPress={onPress}
       style={({ pressed }) => [
         localStyles.card,
@@ -57,10 +66,20 @@ const BookCard = ({
           placeholderContentFit="cover"
           style={localStyles.cover}
           contentFit="cover"
-          transition={450}
-          recyclingKey={book.coverPath}
+          transition={{ duration: 450, skipOnCacheHit: 'all' }}
+          cachePolicy="memory-disk"
+          recyclingKey={coverKey ?? bookGroupKey(book.title, book.author)}
           accessible={false}
         />
+        {importProgress !== undefined && (
+          <View
+            style={localStyles.loadingContainer}
+            pointerEvents="none"
+          >
+            <View style={localStyles.loadingOverlay} />
+            <BookProgressBarLoader progress={importProgress} />
+          </View>
+        )}
       </View>
       <View style={isFull ? localStyles.fullDetails : localStyles.minimalDetails}>
         <Text style={isFull ? localStyles.fullTitle : localStyles.title}>{book.title}</Text>

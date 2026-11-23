@@ -31,7 +31,7 @@ const Track = ({ track, number, selected = false, onPress }: TrackProps) => {
       <Text style={[localStyles.number, selected && localStyles.selectedNumber]}>
         {String(number).padStart(2, '0')}
       </Text>
-      <Text style={[localStyles.title, selected && localStyles.selectedTitle]}>{track.title}</Text>
+      <Text style={[localStyles.title]}>{track.title}</Text>
       <Text style={localStyles.duration}>{formatTrackDuration(track.duration)}</Text>
     </Pressable>
   );

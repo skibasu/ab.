@@ -12,6 +12,7 @@ export async function importBook(
   book: BookToSave,
   assertActive?: () => void,
   onVerified?: (bookId: string) => void,
+  onProgress?: (fraction: number) => void,
 ): Promise<SavedBookFiles | null> {
   assertActive?.();
   const key = bookGroupKey(book.title, book.author);
@@ -47,15 +48,25 @@ export async function importBook(
   }
 
   const { files, skippedFiles } =
-    newFiles ?? (await findNewBookFiles(book.files, existing?.tracks ?? []));
+    newFiles ??
+    (await findNewBookFiles(book.files, existing?.tracks ?? [], (value) =>
+      onProgress?.(value * 0.45),
+    ));
   assertActive?.();
   if (files.length === 0) {
     if (!skippedFiles && existing) onVerified?.(existing.id);
+    onProgress?.(1);
     return null;
   }
 
   assertActive?.();
-  const savedBook = await saveBookFiles(userId, { ...book, files }, existing?.id, assertActive);
+  const savedBook = await saveBookFiles(
+    userId,
+    { ...book, files },
+    existing?.id,
+    assertActive,
+    (value) => onProgress?.(0.45 + value * 0.45),
+  );
   if (!savedBook) return null;
 
   try {
@@ -80,5 +91,6 @@ export async function importBook(
     throw error;
   }
   if (!skippedFiles && !savedBook.skippedFiles.length) onVerified?.(savedBook.bookId);
+  onProgress?.(1);
   return savedBook;
 }

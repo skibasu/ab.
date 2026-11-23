@@ -20,6 +20,7 @@ const PlaybackPanel = ({ track }: PlaybackPanelProps) => {
   return (
     <View style={localStyles.panel}>
       <View style={localStyles.heading}>
+        <Text style={localStyles.number}>{String(track.position + 1).padStart(2, '0')}</Text>
         <Text style={localStyles.title}>{track.title}</Text>
       </View>
       <View

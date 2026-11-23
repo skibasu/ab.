@@ -29,6 +29,16 @@ export const styles = (theme: AppTheme) =>
       flexShrink: 0,
     },
     cover: StyleSheet.absoluteFill,
+    loadingContainer: {
+      ...StyleSheet.absoluteFill,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    loadingOverlay: {
+      ...StyleSheet.absoluteFill,
+      backgroundColor: theme.backgroundColor.screen,
+      opacity: 0.4,
+    },
     minimalDetails: { paddingVertical: theme.spacing[2] },
     fullDetails: { flex: 1, minWidth: 0, gap: theme.spacing[1] },
     title: { ...theme.textStyles.bookTile, color: theme.textColor.primary },

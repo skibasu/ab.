@@ -1,3 +1,5 @@
+import { useBookImportStore } from '@/stores/book-import-store';
+import { buildLibraryRows } from '@/utils/library-rows';
 import BookCard from '@/components/ui/BookCard/BookCard';
 import MainTitleBlock from '@/components/ui/MainTitleBlock/MainTitleBlock';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -10,14 +12,16 @@ export const Library = ({ isImporting }: { isImporting: boolean }) => {
   const theme = useAppTheme();
   const localStyles = styles(theme);
   const books = useLibraryStore((state) => state.books);
+  const activeImport = useBookImportStore((state) => state.activeImport);
+  const rows = buildLibraryRows(books, activeImport);
 
   return (
     <FlatList
-      data={books}
+      data={rows}
       keyExtractor={(book) => book.id}
       numColumns={2}
       style={localStyles.viewport}
-      contentContainerStyle={[localStyles.content, books.length === 0 && localStyles.container]}
+      contentContainerStyle={[localStyles.content, rows.length === 0 && localStyles.container]}
       columnWrapperStyle={localStyles.row}
       ListEmptyComponent={
         isImporting ? (
@@ -34,12 +38,19 @@ export const Library = ({ isImporting }: { isImporting: boolean }) => {
           />
         )
       }
-      renderItem={({ item: book }) => (
+      renderItem={({ item }) => (
         <BookCard
-          book={book}
+          book={item.book}
+          coverUri={item.coverUri}
+          coverKey={item.id}
+          importProgress={item.progress}
           variant="minimal"
           style={localStyles.card}
-          onPress={() => router.push({ pathname: '/playing', params: { bookId: book.id } })}
+          onPress={
+            item.savedId && item.progress === undefined
+              ? () => router.push({ pathname: '/playing', params: { bookId: item.savedId! } })
+              : undefined
+          }
         />
       )}
     />

@@ -8,6 +8,7 @@ import type { LibraryTrack } from './book-repository';
 export async function findNewBookFiles(
   files: BookFileWithMetadata[],
   tracks: LibraryTrack[],
+  onProgress?: (fraction: number) => void,
 ): Promise<{ files: BookFileWithMetadata[]; matchesSavedTrack: boolean; skippedFiles: number }> {
   const candidates = tracks.map(({ filePath }) => new File(Paths.document, filePath));
   const bySize = new Map<number | null, File[]>();
@@ -37,7 +38,7 @@ export async function findNewBookFiles(
   const result: BookFileWithMetadata[] = [];
   let matchesSavedTrack = false;
   let skippedFiles = 0;
-  for (const selected of files) {
+  for (const [index, selected] of files.entries()) {
     try {
       const file = new File(selected.uri);
       const size = file.size;
@@ -61,6 +62,8 @@ export async function findNewBookFiles(
     } catch (error) {
       skippedFiles++;
       console.warn(LOG_MESSAGES.bookImport.fileComparisonSkipped, { name: selected.name }, error);
+    } finally {
+      onProgress?.((index + 1) / files.length);
     }
   }
 
