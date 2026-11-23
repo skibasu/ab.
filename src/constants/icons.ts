@@ -5,15 +5,20 @@ export const icons = {
   back: require('@/assets/svg/back.svg'),
   books: require('@/assets/svg/books.svg'),
   check: require('@/assets/svg/check.svg'),
+  chevronRight: require('@/assets/svg/chevron-right.svg'),
   clear: require('@/assets/svg/clear.svg'),
   close: require('@/assets/svg/close.svg'),
   envelope: require('@/assets/svg/envelope.svg'),
   emailVerificationAlert: require('@/assets/svg/email-verification-alert.svg'),
   filters: require('@/assets/svg/filters.svg'),
   import: require('@/assets/svg/import.svg'),
+  mp3File: require('@/assets/svg/mp3-file.svg'),
   next: require('@/assets/svg/next.svg'),
   pause: require('@/assets/svg/pause.svg'),
   play: require('@/assets/svg/play.svg'),
+  playerBack15: require('@/assets/svg/player-back-15.svg'),
+  playerForward15: require('@/assets/svg/player-forward-15.svg'),
+  playerPlay: require('@/assets/svg/player-play.svg'),
   recentlyListened: require('@/assets/svg/recenty-listened.svg'),
   search: require('@/assets/svg/search.svg'),
   searchInput: require('@/assets/svg/search-input.svg'),
@@ -22,6 +27,7 @@ export const icons = {
   timeBack: require('@/assets/svg/time-back.svg'),
   timeNext: require('@/assets/svg/time-next.svg'),
   unfinished: require('@/assets/svg/unfinished.svg'),
+  zipArchive: require('@/assets/svg/zip-archive.svg'),
 } as const;
 
 export type IconName = keyof typeof icons;

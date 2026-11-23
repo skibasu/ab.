@@ -14,11 +14,35 @@ export const styles = (theme: AppTheme) =>
       justifyContent: 'center',
       gap: theme.spacing[2.5],
     },
+    primary: {
+      backgroundColor: theme.backgroundColor.primary,
+    },
+    primaryPressed: {
+      backgroundColor: theme.backgroundColor.primaryPressed,
+    },
+    ghost: {
+      backgroundColor: theme.backgroundColor.control,
+    },
+    ghostPressed: {
+      backgroundColor: theme.backgroundColor.controlPressed,
+    },
+    disabled: {
+      backgroundColor: theme.backgroundColor.disabled,
+    },
     label: {
       ...theme.textStyles.button,
 
       flexShrink: 1,
       textAlign: 'center',
+    },
+    primaryLabel: {
+      color: theme.textColor.onPrimary,
+    },
+    ghostLabel: {
+      color: theme.textColor.primary,
+    },
+    disabledLabel: {
+      color: theme.textColor.disabled,
     },
     spinner: {
       width: theme.width.icon,

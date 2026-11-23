@@ -27,7 +27,7 @@ export default function AppLayout() {
       <Stack.Screen
         name="playing"
         options={{
-          header: () => <Header {...APP_HEADERS.playing} />,
+          headerShown: false,
         }}
       />
       <Stack.Screen

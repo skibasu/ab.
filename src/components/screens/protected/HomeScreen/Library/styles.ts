@@ -1,22 +1,16 @@
 import { AppTheme } from '@/theme';
 import { StyleSheet } from 'react-native';
 
-export const styles = (theme: AppTheme) =>
-  StyleSheet.create({
-    container: {
-      width: '100%',
-      flexDirection: 'row',
-      flexWrap: 'wrap',
+import { styles as globalStyles } from '@/styles/globalStyles';
+
+export const styles = (theme: AppTheme) => ({
+  ...globalStyles(theme),
+  ...StyleSheet.create({
+    content: { paddingHorizontal: theme.spacing[6], paddingVertical: theme.spacing[5] },
+    row: {
       justifyContent: 'space-between',
+      alignItems: 'flex-start',
     },
-    cart: { width: '46%', flexGrow: 0 },
-    coverFrame: {
-      width: '100%',
-      aspectRatio: 1,
-      borderRadius: theme.borderRadius.control,
-      overflow: 'hidden',
-    },
-    cover: StyleSheet.absoluteFill,
-    title: { ...theme.textStyles.bookTile, color: theme.textColor.primary },
-    author: { ...theme.textStyles.metadata, color: theme.textColor.secondary },
-  });
+    card: { width: '46%', flexGrow: 0 },
+  }),
+});
