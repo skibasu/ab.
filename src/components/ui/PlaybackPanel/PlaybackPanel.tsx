@@ -6,6 +6,8 @@ import { icons } from '@/constants/icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { LibraryTrack } from '@/services/book-repository';
 import { formatTrackDuration } from '@/utils/format-track-duration';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { File, Paths } from 'expo-file-system';
 import { styles } from './styles';
 
 type PlaybackPanelProps = {
@@ -14,6 +16,15 @@ type PlaybackPanelProps = {
 
 /** Presentation only. Audio controls remain disabled until playback is implemented. */
 const PlaybackPanel = ({ track }: PlaybackPanelProps) => {
+  const audioSource = {
+    uri: new File(Paths.document, track.filePath).uri,
+  };
+  const player = useAudioPlayer(audioSource);
+  const status = useAudioPlayerStatus(player);
+  const togglePlay = () => (player.playing ? player.pause() : player.play());
+  const next = async () => await player.seekTo(Math.min(player.duration, player.currentTime + 15));
+  const back = async () => await player.seekTo(Math.max(0, player.currentTime - 15));
+
   const theme = useAppTheme();
   const localStyles = styles(theme);
 
@@ -34,7 +45,7 @@ const PlaybackPanel = ({ track }: PlaybackPanelProps) => {
         <View style={localStyles.thumb} />
       </View>
       <View style={localStyles.times}>
-        <Text style={localStyles.time}>0:00</Text>
+        <Text style={localStyles.time}>{status.currentTime.toFixed(2)}</Text>
         <Text style={localStyles.time}>
           {track.duration === null ? '—' : `−${formatTrackDuration(track.duration)}`}
         </Text>
@@ -44,7 +55,7 @@ const PlaybackPanel = ({ track }: PlaybackPanelProps) => {
           accessibilityLabel="Back 15 seconds"
           accessibilityRole="button"
           accessibilityState={{ disabled: true }}
-          disabled
+          onPress={back}
           style={localStyles.skipButton}
         >
           <Icon
@@ -58,20 +69,28 @@ const PlaybackPanel = ({ track }: PlaybackPanelProps) => {
           accessibilityLabel="Play"
           accessibilityRole="button"
           accessibilityState={{ disabled: true }}
-          disabled
+          onPress={togglePlay}
           style={localStyles.playButton}
         >
-          <Image
-            source={icons.playerPlay}
-            style={localStyles.playIcon}
-            accessible={false}
-          />
+          {status.playing ? (
+            <Image
+              source={icons.playerPause}
+              style={localStyles.playIcon}
+              accessible={false}
+            />
+          ) : (
+            <Image
+              source={icons.playerPlay}
+              style={localStyles.playIcon}
+              accessible={false}
+            />
+          )}
         </Pressable>
         <Pressable
           accessibilityLabel="Forward 15 seconds"
           accessibilityRole="button"
           accessibilityState={{ disabled: true }}
-          disabled
+          onPress={next}
           style={localStyles.skipButton}
         >
           <Icon

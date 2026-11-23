@@ -19,6 +19,7 @@ export const icons = {
   playerBack15: require('@/assets/svg/player-back-15.svg'),
   playerForward15: require('@/assets/svg/player-forward-15.svg'),
   playerPlay: require('@/assets/svg/player-play.svg'),
+  playerPause: require('@/assets/svg/player-pause.svg'),
   recentlyListened: require('@/assets/svg/recenty-listened.svg'),
   search: require('@/assets/svg/search.svg'),
   searchInput: require('@/assets/svg/search-input.svg'),
