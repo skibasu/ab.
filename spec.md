@@ -23,6 +23,14 @@ Obecny etap obejmuje logikę importu MP3/ZIP i lokalnej biblioteki. Budowanie in
 
 - Cały nowy i modyfikowany kod zapisujemy po angielsku. Nie dodajemy polskich tekstów w kodzie: dotyczy to nazw zmiennych i funkcji, komentarzy, logów konsoli, komunikatów błędów oraz tekstów interfejsu.
 
+### Błędy i logi
+
+- Nie wpisujemy komunikatów błędów bezpośrednio jako stringów w komponentach, hookach ani serwisach. Definiujemy je w `src/constants/errors.ts`, w kategorii odpowiadającej funkcjonalności (np. uwierzytelnianie, błędy techniczne, audio, biblioteka).
+- Zachowujemy rozdział między komunikatami dla użytkownika, technicznymi komunikatami wyjątków i kodami błędów. Kody własnych błędów wymagających rozpoznawania definiujemy w `APP_ERROR_CODES`; nie opieramy logiki na porównywaniu treści komunikatu.
+- Wszystkie teksty dla `console.log`, `console.info`, `console.warn`, `console.error` i pozostałych metod konsoli definiujemy w `src/constants/log-messages.ts`, w kategoriach funkcjonalnych. Nie dodajemy stringów ani template literals bezpośrednio w wywołaniach konsoli.
+- Logi korzystają z nazwanych komunikatów lub funkcji formatujących. Dane kontekstowe oraz oryginalny obiekt błędu przekazujemy osobno, aby zachować stack trace i przyczynę błędu.
+- Komunikaty narzędzi uruchamianych przez Node.js i konfiguracji budowania definiujemy osobno w `tooling-messages.cjs`, bez zależności od kodu aplikacji. Dane i sygnały testowe pozostają w nazwanych stałych testów.
+
 ### Platforma i źródła
 
 - Pierwsze wdrożenie importu dotyczy iPhone'a.
@@ -48,16 +56,17 @@ Obecny etap obejmuje logikę importu MP3/ZIP i lokalnej biblioteki. Budowanie in
 
 - Już pierwsza wersja odczytuje metadane z tagów MP3: dane potrzebne do ustalenia tytułu książki, autora, nazwy części, kolejności oraz osadzoną okładkę, jeśli występuje.
 - Grupowanie plików w książki opiera się na metadanych. Nie przyjmujemy automatycznie zasady „jeden ZIP = jedna książka” ani „jeden import MP3 = jedna książka”.
-- Kluczem grupowania jest album (tytuł książki) oraz album artist (autor); przy braku album artist korzystamy z artist.
+- Kluczem grupowania jest album (tytuł książki) i autor. Przy imporcie MP3 jako autora używamy tagu `artist`, a przy jego braku `albumArtist`. W starszym wpisie z autorem zapisanym z `albumArtist` poprawiamy autora po ponownym imporcie, jeśli co najmniej jeden plik ma identyczną zawartość.
 - Tag title określa tytuł części. Części sortujemy według numeru dysku, następnie numeru ścieżki, a następnie naturalnej kolejności nazw plików (np. 1, 2, 10).
 - Jeden ZIP może zawierać kilka książek. Pliki z podkatalogów podlegają tym samym regułom grupowania według tagów; nazwa ZIP ani podkatalogu nie jest kluczem książki.
-- Odczyt okładki osadzonej w pliku jest w zakresie. Wyszukiwanie okładek w internecie nie jest zatwierdzone; na obecnym etapie korzystamy z tagów.
+- Okładka osadzona w MP3 ma pierwszeństwo. Gdy nowa książka jej nie ma, zapis i wyświetlenie biblioteki kończą się z okładką domyślną. Następnie aplikacja szuka okładki w Open Library po tytule i autorze, zapisuje ją obok MP3 i aktualizuje widoczną książkę.
 - Przy braku metadanych stosujemy `Unknown`, bez odgadywania albumu, autora czy tytułu z nazwy pliku, ZIP lub katalogu. Zakładamy, że użytkownicy importują przygotowane pliki z tagami.
-- Każdy plik bez tagu album tworzy osobną książkę o tytule `Unknown`. Wartość zastępcza nie jest wspólnym kluczem grupowania: takich książek nie łączymy ze sobą ani przy kolejnych importach.
+- Wszystkie pliki bez znanego albumu trafiają do jednej książki i jednego katalogu `Unknown` na konto, niezależnie od tagu autora. Obejmuje to brak tagu, pusty tag i wartość `Unknown`. Autor tej grupy to `Unknown`.
 - Gdy album występuje, lecz brakuje autora, stosujemy autora `Unknown` i grupujemy według albumu i tej wartości zastępczej.
-- Jeśli książka o tym samym albumie i autorze istnieje już w bibliotece aktualnego konta, anulujemy cały import. Nie dołączamy części, nie zastępujemy książki i nie tworzymy jej kopii. Ta zasada zastępuje wcześniejsze ustalenie o dołączaniu części.
+- Jeśli książka o tym samym albumie i autorze istnieje już na danym koncie, dopisujemy tylko nieobecne MP3 do jej katalogu. Identyczność plików sprawdzamy po ich zawartości. Porównanie albumu i autora pomija różnice w wielkości liter i odstępach. Nowe części dopisujemy po istniejących, a łączny czas przeliczamy.
+- Przy porównywaniu metadanych, sortowaniu nazw plików i zapytaniach do Open Library zamieniamy polskie znaki na odpowiedniki bez znaków diakrytycznych. Zapisane i wyświetlane metadane zachowują oryginalną pisownię.
 - Odrzucenie importu nie modyfikuje żadnej istniejącej książki. Dotyczy to również importu kilku książek, gdy tylko jedna z nich już istnieje.
-- Priorytet okładek przy wielu osadzonych obrazach i normalizacja wartości tagów wymagają doprecyzowania. Brak okładki nie jest wartością tekstową `Unknown`; biblioteka zapisuje brak obrazu.
+- Przy wyszukiwaniu okładek sprawdzamy także tytuł dopasowanego wydania, np. polskiego przekładu, i porównujemy autora. Przy braku wyniku lub błędzie zostaje okładka domyślna. Po uruchomieniu aplikacji można ponowić wyszukiwanie dla już zapisanych książek nadal używających domyślnej okładki, raz na książkę podczas działania aplikacji.
 - Nie dodajemy formularza edycji danych na obecnym etapie bez osobnego ustalenia.
 
 ### Operacje biblioteki
@@ -65,7 +74,9 @@ Obecny etap obejmuje logikę importu MP3/ZIP i lokalnej biblioteki. Budowanie in
 - Logika biblioteki obejmuje odczyt książek aktualnego konta, dodawanie kompletnych książek oraz usuwanie.
 - Usunięcie książki obejmuje jej lokalne audio, okładkę i metadane oraz powiązany lokalny postęp, jeżeli zostanie wprowadzony w etapie odtwarzacza.
 - Usuwanie dotyczy wyłącznie biblioteki aktualnego konta. Nie usuwa oryginałów w iCloud, Dropbox ani innych źródłach.
-- Zapis importu jest całościowy: wszystkie przygotowane książki stają się dostępne razem albo żadna z nich. Błąd lub anulowanie przed zatwierdzeniem pozostawia dotychczasową bibliotekę bez zmian.
+- Błąd odczytu lub kopiowania pojedynczego MP3 pomija ten plik i nie blokuje pozostałych części ani książek. Zapisujemy poprawne pliki; częściowo skopiowane pliki usuwamy. Jest to wyjątek od wcześniejszego wymagania całościowego zapisu importu.
+- Książkę zapisujemy, jeśli udało się zachować co najmniej jedną poprawną część. Jeśli wszystkie jej pliki zostaną pominięte, usuwamy nowy katalog i pomijamy książkę. Błąd zapisu okładki pozwala zapisać książkę bez okładki.
+- Każde pominięcie jest raportowane w konsoli nazwanym komunikatem i kontekstem pliku; wynik zapisu zawiera listę plików pominiętych podczas kopiowania. Błędy katalogu docelowego lub sprzątania są nadal błędami operacji, nie pominięciem pojedynczego MP3.
 
 ### Limity
 
@@ -95,8 +106,8 @@ Obecny etap obejmuje logikę importu MP3/ZIP i lokalnej biblioteki. Budowanie in
 3. Aplikacja sprawdza wybrane typy, rozmiary, liczbę plików i dostępne miejsce.
 4. Dla ZIP sprawdza zawartość i limity rozpakowania; dla MP3 przygotowuje kopiowanie.
 5. Kopiuje lub rozpakowuje audio do katalogu roboczego aplikacji, udostępniając aktualny etap dla przyszłego interfejsu.
-6. Odczytuje tagi i osadzone okładki oraz grupuje części w książki według albumu i autora. Przy brakujących danych stosuje `Unknown`; każdy plik bez albumu tworzy osobną książkę. Jeśli rozpozna książkę istniejącą już w bibliotece konta, anuluje cały import i sprząta jego pliki robocze.
-7. Po pomyślnym przygotowaniu wszystkich plików oraz ponownym sprawdzeniu konta i braku istniejących książek zatwierdza cały import w bibliotece. Wszystkie nowe książki stają się dostępne razem.
+6. Odczytuje tagi i osadzone okładki, pomija pliki z błędem odczytu i grupuje pozostałe części w książki według albumu i autora. Wszystkie pliki bez znanego albumu trafiają do książki `Unknown`. Dla książki już istniejącej na koncie pomija identyczne pliki i dopisuje pozostałe części.
+7. Po przygotowaniu plików oraz ponownym sprawdzeniu konta i braku istniejących książek zapisuje poprawne części. Błąd kopiowania MP3 pomija ten plik; książka bez żadnej zapisanej części zostaje pominięta.
 8. Sprząta dane robocze i pokazuje książkę w bibliotece.
 
 Powyższy przebieg opisuje docelowe użycie logiki. W obecnym etapie stan, postęp i wynik importu mają być dostępne dla przyszłego interfejsu, bez budowania nowych ekranów i formularzy. Dokładne ekrany, moment potwierdzenia danych i zachowanie po zakończeniu importu dopracujemy w etapie UI.
@@ -120,7 +131,7 @@ Powyższy przebieg opisuje docelowe użycie logiki. W obecnym etapie stan, post�
 - Nie gwarantujemy kontynuowania importu w tle ani po zamknięciu aplikacji. Po przerwaniu procesu przez system sprzątamy jego dane robocze; użytkownik rozpoczyna import ponownie od początku. Nie implementujemy wznawiania.
 - Wylogowanie lub zmiana konta anuluje import przed zatwierdzeniem biblioteki. Import jest związany z identyfikatorem konta, na którym został rozpoczęty; nie może zostać zapisany dla nowego konta.
 - Po przerwanym lub nieudanym imporcie aplikacja sprząta własne pliki robocze, także przy kolejnym uruchomieniu.
-- Niedokończona książka nie pojawia się jako gotowa do odtwarzania.
+- Książka może zawierać mniej części niż wybrano, jeśli błędne pliki zostały pominięte. Do odtwarzania udostępniamy wyłącznie części, których zapis zakończył się poprawnie, po zakończeniu próby zapisu książki.
 - Błąd zapisu biblioteki po skopiowaniu audio nie może pozostawić niewidocznych, niezarządzanych plików.
 
 ## Szczegóły do dopracowania przed implementacją
@@ -128,7 +139,6 @@ Powyższy przebieg opisuje docelowe użycie logiki. W obecnym etapie stan, post�
 ### Organizacja książek
 
 - Jak normalizujemy tagi (spacje, wielkość liter) i wybieramy okładkę, gdy pliki tej samej książki zawierają różne obrazy?
-- Ponowny import książki z albumem jest odrzucany według albumu i autora; nie wymaga ustalania duplikatów jej części. Czy potrzebne jest dodatkowe wykrywanie identycznych plików bez albumu, które standardowo tworzą osobne książki `Unknown`?
 
 ### Ograniczenia i obsługa
 
@@ -143,8 +153,8 @@ Powyższy przebieg opisuje docelowe użycie logiki. W obecnym etapie stan, post�
 - Wylogowanie zachowuje lokalną bibliotekę konta. Konto B nie widzi książek konta A; ponowne zalogowanie na konto A przywraca dostęp do jego biblioteki.
 - Import nie zmienia i nie usuwa oryginałów użytkownika.
 - Tagi są odczytywane już w pierwszej wersji; grupowanie i kolejność części odpowiadają zatwierdzonym regułom, a osadzona okładka zostaje zachowana w lokalnej bibliotece.
-- Pliki bez albumu tworzą osobne książki `Unknown`. Wykrycie istniejącej książki według albumu i autora anuluje cały import bez zmian w bibliotece.
-- Zapis kilku książek jest całościowy; błąd, anulowanie lub zmiana konta przed zatwierdzeniem nie pozostawia częściowo dodanych książek.
+- Pliki bez znanego albumu tworzą jedną książkę `Unknown` na konto. Ponowny import dowolnej książki dopisuje wyłącznie pliki, których zawartości jeszcze nie ma w jej katalogu.
+- Błąd pojedynczego MP3 nie usuwa poprawnie zapisanych części ani innych książek. Książka bez poprawnie zapisanych części jest pomijana, a jej katalog usuwany. Zmiana konta nadal anuluje import zgodnie z zasadą izolacji kont.
 - Usunięcie książki usuwa jej lokalne audio, okładkę i metadane, nie zmieniając książek innych kont ani źródłowych plików użytkownika.
 - Zmiana limitów wymaga edycji jednego pliku konfiguracyjnego; poszczególne moduły nie powielają wartości limitów.
 - Limity, brak miejsca, błędy odczytu i zapisu oraz uszkodzony ZIP nie powodują zapisu książki jako gotowej.

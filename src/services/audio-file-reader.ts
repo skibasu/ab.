@@ -1,4 +1,5 @@
 import { File, FileMode } from 'expo-file-system';
+import { AUDIO_ERROR_MESSAGES } from '@/constants/errors';
 import type { AudioFileReader } from './audio-file-reader.types';
 
 /**
@@ -13,18 +14,18 @@ export function openAudioFileReader(uri: string): AudioFileReader {
 
   if (size === null) {
     handle.close();
-    throw new Error('Could not determine the audio file size.');
+    throw new Error(AUDIO_ERROR_MESSAGES.fileSizeUnavailable);
   }
 
   return {
     size,
     async read(position, length) {
-      if (closed) throw new Error('The audio file reader is closed.');
+      if (closed) throw new Error(AUDIO_ERROR_MESSAGES.readerClosed);
       if (!Number.isSafeInteger(position) || position < 0) {
-        throw new RangeError('The read position must be a non-negative safe integer.');
+        throw new RangeError(AUDIO_ERROR_MESSAGES.invalidReadPosition);
       }
       if (!Number.isSafeInteger(length) || length < 0) {
-        throw new RangeError('The read length must be a non-negative safe integer.');
+        throw new RangeError(AUDIO_ERROR_MESSAGES.invalidReadLength);
       }
       if (length === 0 || position >= size) return new Uint8Array();
 

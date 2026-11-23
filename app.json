@@ -48,7 +48,8 @@
         }
       ],
       "@react-native-google-signin/google-signin",
-      "expo-asset"
+      "expo-asset",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,4 +1,4 @@
-import Icon from '@/components/ui/icon';
+import Icon from '@/components/ui/Icon/Icon';
 import { ACCORDION_ANIMATION_CONFIG } from '@/constants/animations';
 import { type IconName } from '@/constants/icons';
 import { useAppTheme } from '@/hooks/use-app-theme';

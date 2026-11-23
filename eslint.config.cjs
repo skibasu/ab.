@@ -6,6 +6,8 @@ module.exports = [
   {
     ignores: [
       '.expo/**',
+      '**/.build/**',
+      '**/.swiftpm/**',
       'dist/**',
       'web-build/**',
       'coverage/**',

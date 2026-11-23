@@ -1,4 +1,6 @@
 import { formatDuration } from '@/utils/format-duration';
+import { AUDIO_ERROR_MESSAGES } from '@/constants/errors';
+import { LOG_MESSAGES } from '@/constants/log-messages';
 import { Asset } from 'expo-asset';
 import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import { File } from 'expo-file-system';
@@ -29,7 +31,7 @@ export default function AppPlayer() {
         const asset = Asset.fromModule(audioSource);
         await asset.downloadAsync();
         if (cancelled) return;
-        if (!asset.localUri) throw new Error('Could not resolve the local MP3 file.');
+        if (!asset.localUri) throw new Error(AUDIO_ERROR_MESSAGES.localFileUnavailable);
 
         // This small test MP3 is read into memory; large audiobooks need chunked reads.
         const file = new File(asset.localUri);
@@ -50,10 +52,10 @@ export default function AppPlayer() {
             duration: metadata.format.duration,
           };
           setFileMeta(fileMeta);
-          console.log('[mag.mp3] Metadata:', fileMeta);
+          console.log(LOG_MESSAGES.audio.metadataRead('mag.mp3'), fileMeta);
         }
       } catch (error) {
-        if (!cancelled) console.error('[pink-panther.mp3] Failed to read metadata:', error);
+        if (!cancelled) console.error(LOG_MESSAGES.audio.metadataReadFailed('mag.mp3'), error);
       }
     };
 

@@ -8,11 +8,12 @@ import { styles } from './styles';
 type ButtonHeaderProps = {
   label: string;
   icon: IconName;
+  iconColor?: string;
 
   onPress?: () => void;
 };
 
-const ButtonHeader = ({ label, icon, onPress }: ButtonHeaderProps) => {
+const ButtonHeader = ({ label, icon, iconColor, onPress }: ButtonHeaderProps) => {
   const theme = useAppTheme();
   const stylesLocal = styles(theme);
   const isDisabled = !onPress;
@@ -32,7 +33,7 @@ const ButtonHeader = ({ label, icon, onPress }: ButtonHeaderProps) => {
             accessible={false}
             source={icons[icon]}
             style={[stylesLocal.image, iconSize]}
-            tintColor={theme.tintColor.primary}
+            tintColor={iconColor ?? theme.tintColor.primary}
           />
         </View>
       )}

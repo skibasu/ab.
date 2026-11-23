@@ -3,6 +3,7 @@ import Actions from '@/components/ui/Actions/Actions';
 import HeaderTitle from '@/components/ui/HeaderTitle/HeaderTitle';
 import type { IconName } from '@/constants/icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,9 +11,10 @@ type AbHeaderProps = {
   title: string | null;
   iconList: IconName[];
   transparent?: boolean;
+  trailingAction?: ReactNode;
 };
 
-const Header = ({ title, iconList, transparent = false }: AbHeaderProps) => {
+const Header = ({ title, iconList, transparent = false, trailingAction }: AbHeaderProps) => {
   const theme = useAppTheme();
   const stylesLocal = styles(theme);
   return (
@@ -22,7 +24,10 @@ const Header = ({ title, iconList, transparent = false }: AbHeaderProps) => {
     >
       <View style={stylesLocal.row}>
         <HeaderTitle text={title} />
-        <Actions iconList={iconList} />
+        <Actions
+          iconList={iconList}
+          trailingAction={trailingAction}
+        />
       </View>
     </SafeAreaView>
   );

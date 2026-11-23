@@ -9,6 +9,38 @@ module.exports = function (api) {
       {
         test: (filename) =>
           Boolean(
+            filename &&
+            /node_modules[/\\]@zip\.js[/\\]zip\.js[/\\]lib[/\\]core[/\\]codec-registry\.js$/.test(
+              filename,
+            ),
+          ),
+        plugins: [
+          function disableExternalZipCodecs({ types: t }) {
+            return {
+              visitor: {
+                // Store/Deflate use the bundled JS codec. Optional external codecs use
+                // import(variable), which Hermes cannot compile even when never called.
+                CallExpression(path) {
+                  if (!t.isImport(path.node.callee)) return;
+                  path.replaceWith(
+                    t.callExpression(
+                      t.memberExpression(t.identifier('Promise'), t.identifier('reject')),
+                      [
+                        t.newExpression(t.identifier('Error'), [
+                          t.identifier('ERR_UNSUPPORTED_COMPRESSION'),
+                        ]),
+                      ],
+                    ),
+                  );
+                },
+              },
+            };
+          },
+        ],
+      },
+      {
+        test: (filename) =>
+          Boolean(
             filename && /node_modules[/\\]file-type[/\\]source[/\\]index\.js$/.test(filename),
           ),
         plugins: [
@@ -22,7 +54,7 @@ module.exports = function (api) {
                   path.node.body = t.blockStatement([
                     t.throwStatement(
                       t.newExpression(t.identifier('Error'), [
-                        t.stringLiteral('Node.js stream APIs are unavailable in this app.'),
+                        t.stringLiteral(BUILD_ERROR_MESSAGES.nodeStreamsUnavailable),
                       ]),
                     ),
                   ]);
@@ -35,3 +67,4 @@ module.exports = function (api) {
     ],
   };
 };
+const { BUILD_ERROR_MESSAGES } = require('./tooling-messages.cjs');

@@ -4,6 +4,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { watch } from 'chokidar';
+import messages from '../tooling-messages.cjs';
+
+const { development: logMessages } = messages.SCRIPT_LOG_MESSAGES;
 
 const require = createRequire(import.meta.url);
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -71,7 +74,7 @@ function signalChild(child, signal) {
       process.kill(-child.pid, signal);
     }
   } catch (error) {
-    if (error.code !== 'ESRCH') console.error(error);
+    if (error.code !== 'ESRCH') console.error(logMessages.processSignalFailed, error);
   }
 }
 
@@ -106,7 +109,7 @@ function runCheck({ name, file, args }) {
   return new Promise((resolve) => {
     const child = run(file, args);
     child.once('error', (error) => {
-      console.error(`[dev] ${name}: ${error.message}`);
+      console.error(logMessages.checkFailed(name), error);
       resolve(false);
     });
     child.once('exit', (code) => resolve(code === 0));
@@ -138,23 +141,21 @@ async function validate() {
   checking = true;
   dirty = false;
   try {
-    console.log('[dev] Checking TypeScript and ESLint…');
+    console.log(logMessages.checking);
     const results = await Promise.all(checks.map(runCheck));
     // If files changed during the check, validate their latest saved contents.
     if (stopping || dirty) return;
     if (results.some((passed) => !passed)) {
       await pauseExpo();
-      console.error(
-        '[dev] Validation failed. Expo/Metro paused. Waiting for a saved fix; the server will restart automatically.',
-      );
+      console.error(logMessages.validationFailed);
       return;
     }
-    console.log('[dev] TypeScript and ESLint passed.');
+    console.log(logMessages.checksPassed);
     if (!expo) {
       const child = run(require.resolve('expo/bin/cli'), ['start', ...process.argv.slice(2)], true);
       expo = child;
       child.once('error', async (error) => {
-        console.error(`[dev] Expo: ${error.message}`);
+        console.error(logMessages.expoStartFailed, error);
         await stop(1);
       });
       child.once('exit', async (code, signal) => {
@@ -174,7 +175,7 @@ function scheduleCheck() {
   clearTimeout(timer);
   timer = setTimeout(() => {
     validate().catch(async (error) => {
-      console.error(error);
+      console.error(logMessages.validationCrashed, error);
       await stop(1);
     });
   }, 200);
@@ -192,7 +193,7 @@ watcher.on('all', (event, file) => {
 });
 watcher.once('ready', scheduleCheck);
 watcher.on('error', async (error) => {
-  console.error(`[dev] File watcher: ${error.message}`);
+  console.error(logMessages.fileWatcherFailed, error);
   await stop(1);
 });
 process.once('SIGINT', () => void stop(130));

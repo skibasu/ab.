@@ -1,11 +1,23 @@
 import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
 import { readFile } from 'node:fs/promises';
+import { registerHooks } from 'node:module';
 import test from 'node:test';
 import { parseBuffer, parseFromTokenizer, selectCover } from 'music-metadata';
 import { EndOfStreamError } from 'strtok3/core';
 
-import { AudioFileTokenizer } from '../src/services/audio-file-tokenizer.ts';
+// Resolve the app's TypeScript alias when running its tokenizer directly in Node.js.
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (specifier === '@/constants/errors') {
+      return nextResolve(new URL('../src/constants/errors.ts', import.meta.url).href, context);
+    }
+    return nextResolve(specifier, context);
+  },
+});
+
+const { AudioFileTokenizer } = await import('../src/services/audio-file-tokenizer.ts');
+const TEST_ERROR_MESSAGES = { fileReadFailed: 'Simulated file read failure' };
 
 function createReader(bytes, fragmentSize = Infinity) {
   const stats = { bytesRead: 0, maxRead: 0, closes: 0 };
@@ -110,9 +122,9 @@ test('reads embedded cover art and trailing ID3v1 tags', async () => {
 test('closes the reader when parsing fails', async () => {
   const reader = createReader(new Uint8Array(100));
   reader.read = async () => {
-    throw new Error('Simulated file read failure');
+    throw new Error(TEST_ERROR_MESSAGES.fileReadFailed);
   };
 
-  await assert.rejects(parseReader(reader), /Simulated file read failure/);
+  await assert.rejects(parseReader(reader), { message: TEST_ERROR_MESSAGES.fileReadFailed });
   assert.equal(reader.stats.closes, 1);
 });

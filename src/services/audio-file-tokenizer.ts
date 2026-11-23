@@ -7,6 +7,7 @@ import {
 } from 'strtok3/core';
 
 import type { AudioFileReader } from './audio-file-reader.types';
+import { AUDIO_ERROR_MESSAGES } from '@/constants/errors';
 
 const READ_CHUNK_SIZE = 64 * 1024;
 // Limits tokenizer-owned token buffers, not the audio file size or total memory usage.
@@ -51,7 +52,7 @@ export class AudioFileTokenizer extends AbstractTokenizer implements IRandomAcce
 
   /** Reads bytes without changing the parser cursor; exact reads reject at EOF. */
   async peekBuffer(buffer: Uint8Array, options?: IReadChunkOptions): Promise<number> {
-    if (this.closed) throw new Error('The audio file tokenizer is closed.');
+    if (this.closed) throw new Error(AUDIO_ERROR_MESSAGES.tokenizerClosed);
 
     const { position, length, mayBeLess } = this.normalizeOptions(buffer, options);
     const available = Math.max(0, Math.min(length, this.fileInfo.size - position));

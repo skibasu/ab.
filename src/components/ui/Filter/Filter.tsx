@@ -1,8 +1,8 @@
 import { Pressable, Text, type StyleProp, type ViewStyle } from 'react-native';
 
-import { useAppTheme } from '@/hooks/use-app-theme';
-import Icon from '@/components/ui/icon';
+import Icon from '@/components/ui/Icon/Icon';
 import type { IconName } from '@/constants/icons';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { styles } from './styles';
 
 export type FilterIcon = {

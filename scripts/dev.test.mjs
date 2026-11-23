@@ -8,6 +8,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const project = fileURLToPath(new URL('..', import.meta.url));
+const TEST_LOG_MESSAGES = { expoReady: 'EXPO_FIXTURE_READY' };
 
 async function fixture(t, initialSource = "export const message: string = 'ready';\n") {
   const root = await mkdtemp(path.join(os.tmpdir(), 'ab-dev-check-'));
@@ -26,6 +27,10 @@ async function fixture(t, initialSource = "export const message: string = 'ready
     await symlink(path.join(project, 'node_modules', name), target, 'junction');
   }
   await copyFile(new URL('dev.mjs', import.meta.url), path.join(root, 'scripts/dev.mjs'));
+  await copyFile(
+    new URL('../tooling-messages.cjs', import.meta.url),
+    path.join(root, 'tooling-messages.cjs'),
+  );
   await writeFile(
     path.join(root, 'tsconfig.json'),
     JSON.stringify({
@@ -65,7 +70,7 @@ async function fixture(t, initialSource = "export const message: string = 'ready
     path.join(expo, 'bin/cli'),
     `const fs = require('node:fs');
      fs.writeFileSync('expo-started.log', 'started');
-     console.log('EXPO_FIXTURE_READY');
+     console.log(${JSON.stringify(TEST_LOG_MESSAGES.expoReady)});
      process.on('SIGTERM', () => {
        fs.writeFileSync('expo-stopped.log', 'stopped');
        process.exit(0);
@@ -99,7 +104,7 @@ async function fixture(t, initialSource = "export const message: string = 'ready
   }
 
   const ready = (starts = 1) =>
-    waitFor((text) => text.split('EXPO_FIXTURE_READY').length - 1 >= starts, 'start Expo');
+    waitFor((text) => text.split(TEST_LOG_MESSAGES.expoReady).length - 1 >= starts, 'start Expo');
   const paused = (pauses = 1) =>
     waitFor(
       (text) => text.split('Expo/Metro paused.').length - 1 >= pauses,
