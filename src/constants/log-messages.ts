@@ -18,6 +18,8 @@ export const LOG_MESSAGES = {
   },
   bookImport: {
     preparationFailed: 'Failed to prepare selected audio files:',
+    bookSaveFailed: 'Failed to save an imported book:',
+    workspaceCleanupFailed: 'Failed to clean up temporary import files:',
     fileMetadataSkipped: 'Skipped an audio file because metadata could not be read:',
     fileCopySkipped: 'Skipped an audio file because it could not be copied:',
     fileComparisonSkipped: 'Skipped an audio file because it could not be checked for duplicates:',

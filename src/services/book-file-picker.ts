@@ -8,7 +8,7 @@ import * as DocumentPicker from 'expo-document-picker';
 export async function pickBookFiles(type: 'audio/mpeg' | 'application/zip') {
   const result = await DocumentPicker.getDocumentAsync({
     type: [type],
-    multiple: true,
+    multiple: type !== 'application/zip',
     copyToCacheDirectory: true,
   });
 

@@ -79,7 +79,9 @@ export async function saveBookFiles(
   userId: string,
   book: BookToSave,
   existingBookId?: string,
+  assertActive?: () => void,
 ): Promise<SavedBookFiles | null> {
+  assertActive?.();
   if (!userId || userId === '.' || userId === '..' || /[/\\]/.test(userId)) {
     throw new Error(LIBRARY_ERROR_MESSAGES.invalidUserId);
   }
@@ -102,6 +104,7 @@ export async function saveBookFiles(
     let cover: BookFileWithMetadata['cover'] = null;
 
     for (const sourceFile of book.files) {
+      assertActive?.();
       // Generated names avoid collisions between parts with identical source filenames.
       const id = randomUUID();
       const filename = `${id}.mp3`;
@@ -122,6 +125,7 @@ export async function saveBookFiles(
         continue;
       }
 
+      assertActive?.();
       cover ??= sourceFile.cover;
 
       files.push({
@@ -136,6 +140,7 @@ export async function saveBookFiles(
       });
     }
 
+    assertActive?.();
     if (files.length === 0) {
       if (!existingBookId) bookDirectory.delete();
       console.warn(LOG_MESSAGES.bookImport.emptyBookSkipped, { title: book.title, skippedFiles });
@@ -163,6 +168,7 @@ export async function saveBookFiles(
       }
     }
 
+    assertActive?.();
     return {
       bookId,
       userId,

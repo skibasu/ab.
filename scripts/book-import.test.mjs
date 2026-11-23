@@ -174,3 +174,21 @@ test('metadata errors skip only the unreadable files', async (t) => {
   assert.ok(result[0].duration > 0);
   assert.equal(console.warn.mock.callCount(), 2);
 });
+
+test('an import cancelled after a native copy rolls back its files and preserves the sources', async (t) => {
+  prepare(t);
+  const files = [audioFile('first.mp3'), audioFile('second.mp3')];
+  const cancelled = new Error('Simulated account change');
+  const assertActive = () => {
+    if ([...contents.keys()].some((uri) => uri.startsWith('/documents/'))) throw cancelled;
+  };
+  await assert.rejects(
+    saveBookFiles('account', { title: 'Book', author: 'Author', files }, undefined, assertActive),
+    cancelled,
+  );
+  assert.deepEqual(
+    [...contents.keys()],
+    files.map((file) => file.uri),
+  );
+  assert.deepEqual([...directories], ['/documents/library/account/books']);
+});

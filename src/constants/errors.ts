@@ -6,6 +6,26 @@ export const APP_ERROR_CODES = {
   googleSignInNoToken: 'app/google-sign-in-no-token',
   verificationUserMissing: 'app/verification-user-missing',
   passwordResetCooldown: 'app/password-reset-cooldown',
+  importCancelled: 'import/cancelled',
+  importLimitExceeded: 'import/limit-exceeded',
+  importInvalidZip: 'import/invalid-zip',
+  importEncryptedZip: 'import/encrypted-zip',
+  importUnsupportedZip: 'import/unsupported-zip',
+  importNoAudio: 'import/no-audio',
+  importNoSpace: 'import/no-space',
+  importCleanupFailed: 'import/cleanup-failed',
+} as const;
+
+/** Technical import failures. UI messages are kept separate from these error codes. */
+export const BOOK_IMPORT_ERROR_MESSAGES = {
+  [APP_ERROR_CODES.importCancelled]: 'The import was cancelled before it could finish.',
+  [APP_ERROR_CODES.importLimitExceeded]: 'The selected files exceed an import or buffer limit.',
+  [APP_ERROR_CODES.importInvalidZip]: 'The ZIP archive is damaged or contains unsafe entries.',
+  [APP_ERROR_CODES.importEncryptedZip]: 'Encrypted ZIP archives are not supported.',
+  [APP_ERROR_CODES.importUnsupportedZip]: 'The ZIP archive uses an unsupported compression method.',
+  [APP_ERROR_CODES.importNoAudio]: 'The selected files contain no readable MP3 audio.',
+  [APP_ERROR_CODES.importNoSpace]: 'There is not enough free space to prepare and save the import.',
+  [APP_ERROR_CODES.importCleanupFailed]: 'Could not remove all temporary import files.',
 } as const;
 
 export const AUTH_ERROR_MESSAGES = {

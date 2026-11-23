@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { Pressable, Text, View } from 'react-native';
 
-import Icon from '@/components/ui/icon';
+import Icon from '@/components/ui/Icon/Icon';
 import { icons } from '@/constants/icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { LibraryTrack } from '@/services/book-repository';

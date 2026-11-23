@@ -1,7 +1,7 @@
 import { useRef, useState, type ComponentRef } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
-import Icon from '@/components/ui/icon';
+import Icon from '@/components/ui/Icon/Icon';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { styles } from './styles';
 

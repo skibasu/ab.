@@ -27,7 +27,12 @@ export type LibraryBookWithTracks = LibraryBook & { tracks: LibraryTrack[] };
 const filenameOrder = new Intl.Collator(undefined, { numeric: true });
 
 /** Stores successfully copied tracks and updates the book in one transaction. */
-export async function saveBook(book: SavedBookFiles, append = false): Promise<void> {
+export async function saveBook(
+  book: SavedBookFiles,
+  append = false,
+  assertActive?: () => void,
+): Promise<void> {
+  assertActive?.();
   if (book.files.length === 0) throw new Error(LIBRARY_ERROR_MESSAGES.emptyBook);
 
   const tracks = [...book.files]
@@ -50,6 +55,7 @@ export async function saveBook(book: SavedBookFiles, append = false): Promise<vo
 
   await withLibraryDatabase((database) =>
     database.withTransactionAsync(async () => {
+      assertActive?.();
       let startPosition = 0;
       if (append) {
         const existing = await database.getFirstAsync<{ nextPosition: number }>(
@@ -76,6 +82,7 @@ export async function saveBook(book: SavedBookFiles, append = false): Promise<vo
       }
 
       for (const track of tracks) {
+        assertActive?.();
         await database.runAsync(
           `INSERT INTO tracks (id, bookId, title, filePath, duration, position)
            VALUES (?, ?, ?, ?, ?, ?)`,
@@ -96,6 +103,8 @@ export async function saveBook(book: SavedBookFiles, append = false): Promise<vo
         book.bookId,
         book.userId,
       );
+      // A change of account during native writes rolls back the transaction and its copied audio.
+      assertActive?.();
     }),
   );
 }
@@ -156,15 +165,24 @@ export function getBook(userId: string, bookId: string): Promise<LibraryBookWith
   });
 }
 
-export function updateBookAuthor(userId: string, bookId: string, author: string): Promise<void> {
-  return withLibraryDatabase(async (database) => {
-    await database.runAsync(
-      'UPDATE books SET author = ? WHERE id = ? AND userId = ?',
-      author,
-      bookId,
-      userId,
-    );
-  });
+export function updateBookAuthor(
+  userId: string,
+  bookId: string,
+  author: string,
+  assertActive?: () => void,
+): Promise<void> {
+  return withLibraryDatabase((database) =>
+    database.withTransactionAsync(async () => {
+      assertActive?.();
+      await database.runAsync(
+        'UPDATE books SET author = ? WHERE id = ? AND userId = ?',
+        author,
+        bookId,
+        userId,
+      );
+      assertActive?.();
+    }),
+  );
 }
 
 /** Deletes the database record and its tracks. Audio and covers are managed separately. */

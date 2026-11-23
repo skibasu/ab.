@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import Icon from '@/components/ui/icon';
+import Icon from '@/components/ui/Icon/Icon';
 import type { IconName } from '@/constants/icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { styles } from './styles';

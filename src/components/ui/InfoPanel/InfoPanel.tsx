@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import Icon from '@/components/ui/icon';
+import Icon from '@/components/ui/Icon/Icon';
 import Subtitle from '@/components/ui/Subtitle/Subtitle';
 import Title from '@/components/ui/Title/Title';
 import type { IconName } from '@/constants/icons';

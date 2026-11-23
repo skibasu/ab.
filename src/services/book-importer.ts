@@ -7,7 +7,12 @@ import { LIBRARY_ERROR_MESSAGES } from '@/constants/errors';
 import { bookGroupKey } from '@/utils/group-files';
 
 /** Imports a new book or appends missing audio files to an existing book. */
-export async function importBook(userId: string, book: BookToSave): Promise<SavedBookFiles | null> {
+export async function importBook(
+  userId: string,
+  book: BookToSave,
+  assertActive?: () => void,
+): Promise<SavedBookFiles | null> {
+  assertActive?.();
   const key = bookGroupKey(book.title, book.author);
   const books = await listBooks(userId);
   // When older imports left multiple copies, append to the oldest one.
@@ -32,7 +37,8 @@ export async function importBook(userId: string, book: BookToSave): Promise<Save
       const compared = await findNewBookFiles(book.files, candidate.tracks);
       if (!compared.matchesSavedTrack) continue;
 
-      await updateBookAuthor(userId, candidate.id, book.author);
+      assertActive?.();
+      await updateBookAuthor(userId, candidate.id, book.author, assertActive);
       existing = candidate;
       newFiles = compared;
       break;
@@ -42,11 +48,12 @@ export async function importBook(userId: string, book: BookToSave): Promise<Save
   const { files } = newFiles ?? (await findNewBookFiles(book.files, existing?.tracks ?? []));
   if (files.length === 0) return null;
 
-  const savedBook = await saveBookFiles(userId, { ...book, files }, existing?.id);
+  assertActive?.();
+  const savedBook = await saveBookFiles(userId, { ...book, files }, existing?.id, assertActive);
   if (!savedBook) return null;
 
   try {
-    await saveBook(savedBook, existing !== null);
+    await saveBook(savedBook, existing !== null, assertActive);
     return savedBook;
   } catch (error) {
     try {

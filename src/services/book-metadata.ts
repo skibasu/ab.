@@ -9,6 +9,7 @@ import {
 import { openAudioFileReader } from './audio-file-reader';
 import { AudioFileTokenizer } from './audio-file-tokenizer';
 import { LOG_MESSAGES } from '@/constants/log-messages';
+import { assertImportNotAborted } from './book-import-error';
 
 /** Selected file details plus embedded tags used for grouping and ordering book parts. */
 export type BookFileWithMetadata = DocumentPickerAsset & {
@@ -29,19 +30,23 @@ export type BookFileWithMetadata = DocumentPickerAsset & {
  */
 export async function readBookFilesMetadata(
   files: DocumentPickerAsset[],
+  signal?: AbortSignal,
 ): Promise<BookFileWithMetadata[]> {
   const filesWithMetadata: BookFileWithMetadata[] = [];
 
   for (const selectedFile of files) {
+    assertImportNotAborted(signal);
     try {
       filesWithMetadata.push(await readFileMetadata(selectedFile));
     } catch (error) {
+      assertImportNotAborted(signal);
       console.warn(
         LOG_MESSAGES.bookImport.fileMetadataSkipped,
         { name: selectedFile.name, uri: selectedFile.uri },
         error,
       );
     }
+    assertImportNotAborted(signal);
   }
 
   return filesWithMetadata;
