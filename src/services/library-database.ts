@@ -4,7 +4,7 @@ import { DEFAULT_BOOK_COVER_PATH } from '@/constants/book-cover';
 import { LIBRARY_ERROR_MESSAGES } from '@/constants/errors';
 
 const DATABASE_NAME = 'library.db';
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 const ZIP_RECEIPTS_SCHEMA = `CREATE TABLE zip_import_receipts (
   userId TEXT NOT NULL,
   digest TEXT NOT NULL,
@@ -12,6 +12,17 @@ const ZIP_RECEIPTS_SCHEMA = `CREATE TABLE zip_import_receipts (
   tracksJson TEXT NOT NULL,
   PRIMARY KEY (userId, digest)
 )`;
+const PLAYBACK_SCHEMA = `
+  ALTER TABLE books ADD COLUMN lastPlayedAt INTEGER;
+  ALTER TABLE books ADD COLUMN lastPlayedTrackId TEXT;
+  ALTER TABLE tracks ADD COLUMN positionSeconds REAL NOT NULL DEFAULT 0
+    CHECK (positionSeconds >= 0);
+  ALTER TABLE tracks ADD COLUMN completed INTEGER NOT NULL DEFAULT 0
+    CHECK (completed IN (0, 1));
+  ALTER TABLE tracks ADD COLUMN lastPlayedAt INTEGER;
+  ALTER TABLE tracks ADD COLUMN updatedAt INTEGER;
+  CREATE INDEX books_by_last_played ON books (userId, lastPlayedAt DESC);
+`;
 
 let databasePromise: Promise<SQLiteDatabase> | undefined;
 let pendingOperation: Promise<unknown> = Promise.resolve();
@@ -71,6 +82,7 @@ async function openLibraryDatabase(): Promise<SQLiteDatabase> {
           );
 
           ${ZIP_RECEIPTS_SCHEMA};
+          ${PLAYBACK_SCHEMA}
           PRAGMA user_version = ${SCHEMA_VERSION};
         `);
       });
@@ -82,14 +94,19 @@ async function openLibraryDatabase(): Promise<SQLiteDatabase> {
           UPDATE books SET coverPath = previousCoverPath WHERE trim(previousCoverPath) <> '';
           ALTER TABLE books DROP COLUMN previousCoverPath;
           ${ZIP_RECEIPTS_SCHEMA};
+          ${PLAYBACK_SCHEMA}
           PRAGMA user_version = ${SCHEMA_VERSION};
         `);
       });
     } else if (version.user_version === 2) {
       await database.withTransactionAsync(async () => {
         await database.execAsync(
-          `${ZIP_RECEIPTS_SCHEMA}; PRAGMA user_version = ${SCHEMA_VERSION};`,
+          `${ZIP_RECEIPTS_SCHEMA}; ${PLAYBACK_SCHEMA} PRAGMA user_version = ${SCHEMA_VERSION};`,
         );
+      });
+    } else if (version.user_version === 3) {
+      await database.withTransactionAsync(async () => {
+        await database.execAsync(`${PLAYBACK_SCHEMA} PRAGMA user_version = ${SCHEMA_VERSION};`);
       });
     }
 

@@ -4,6 +4,7 @@ import { View } from 'react-native';
 
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { LibraryTrack } from '@/services/book-repository';
+import { useEffect } from 'react';
 import BackButton from './BackButton/BackButton';
 import NextButton from './NextButton/NextButton';
 import PlayButton from './PlayButton/PlayButton';
@@ -24,9 +25,12 @@ const PlaybackPanel = ({ track }: PlaybackPanelProps) => {
   };
   const player = useAudioPlayer(audioSource);
   const status = useAudioPlayerStatus(player);
+
   const togglePlay = () => (player.playing ? player.pause() : player.play());
   const next = async () => await player.seekTo(Math.min(player.duration, player.currentTime + 15));
   const back = async () => await player.seekTo(Math.max(0, player.currentTime - 15));
+
+  useEffect(() => {}, [status.currentTime]);
 
   const theme = useAppTheme();
   const localStyles = styles(theme);

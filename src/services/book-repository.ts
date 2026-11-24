@@ -12,6 +12,8 @@ export type LibraryBook = {
   duration: number | null;
   coverPath: string;
   createdAt: number;
+  lastPlayedAt: number | null;
+  lastPlayedTrackId: string | null;
 };
 
 export type LibraryTrack = {
@@ -20,9 +22,26 @@ export type LibraryTrack = {
   filePath: string;
   duration: number | null;
   position: number;
+  positionSeconds: number;
+  completed: boolean;
+  lastPlayedAt: number | null;
+  updatedAt: number | null;
 };
 
 export type LibraryBookWithTracks = LibraryBook & { tracks: LibraryTrack[] };
+
+export type BookPlaybackUpdate = Pick<LibraryBook, 'lastPlayedAt' | 'lastPlayedTrackId'>;
+export type TrackPlaybackUpdate = Pick<
+  LibraryTrack,
+  'positionSeconds' | 'completed' | 'lastPlayedAt' | 'updatedAt'
+>;
+
+type LibraryTrackRow = Omit<LibraryTrack, 'completed'> & { completed: 0 | 1 };
+
+const toLibraryTrack = (row: LibraryTrackRow): LibraryTrack => ({
+  ...row,
+  completed: row.completed === 1,
+});
 
 const filenameOrder = new Intl.Collator(undefined, { numeric: true });
 
@@ -45,7 +64,7 @@ export async function saveBook(
           stripPolishDiacritics(second.name),
         ),
     )
-    .map<LibraryTrack>((file, position) => ({
+    .map((file, position) => ({
       id: file.id,
       title: file.title?.trim() || file.name,
       filePath: file.relativePath,
@@ -126,10 +145,13 @@ export function getBooks(userId: string): Promise<LibraryBookWithTracks[]> {
          (
            SELECT json_group_array(json_object(
              'id', id, 'title', title, 'filePath', filePath,
-             'duration', duration, 'position', position
+             'duration', duration, 'position', position,
+             'positionSeconds', positionSeconds, 'completed', completed,
+             'lastPlayedAt', lastPlayedAt, 'updatedAt', updatedAt
            ))
            FROM (
-             SELECT id, title, filePath, duration, position
+             SELECT id, title, filePath, duration, position,
+               positionSeconds, completed, lastPlayedAt, updatedAt
              FROM tracks
              WHERE bookId = books.id
              ORDER BY position
@@ -143,7 +165,7 @@ export function getBooks(userId: string): Promise<LibraryBookWithTracks[]> {
 
     return rows.map(({ tracksJson, ...book }) => ({
       ...book,
-      tracks: JSON.parse(tracksJson) as LibraryTrack[],
+      tracks: (JSON.parse(tracksJson) as LibraryTrackRow[]).map(toLibraryTrack),
     }));
   });
 }
@@ -157,11 +179,13 @@ export function getBook(userId: string, bookId: string): Promise<LibraryBookWith
     );
     if (!book) return null;
 
-    const tracks = await database.getAllAsync<LibraryTrack>(
-      'SELECT id, title, filePath, duration, position FROM tracks WHERE bookId = ? ORDER BY position',
+    const tracks = await database.getAllAsync<LibraryTrackRow>(
+      `SELECT id, title, filePath, duration, position,
+         positionSeconds, completed, lastPlayedAt, updatedAt
+       FROM tracks WHERE bookId = ? ORDER BY position`,
       bookId,
     );
-    return { ...book, tracks };
+    return { ...book, tracks: tracks.map(toLibraryTrack) };
   });
 }
 
@@ -183,6 +207,70 @@ export function updateBookAuthor(
       assertActive?.();
     }),
   );
+}
+
+function assertPlaybackTimestamp(value: number | null): void {
+  if (value !== null && (!Number.isSafeInteger(value) || value < 0)) {
+    throw new RangeError(LIBRARY_ERROR_MESSAGES.invalidPlaybackTimestamp);
+  }
+}
+
+/** Updates only playback fields. The selected track must belong to this user's book. */
+export async function updateBook(
+  userId: string,
+  bookId: string,
+  changes: BookPlaybackUpdate,
+): Promise<boolean> {
+  const { lastPlayedAt, lastPlayedTrackId } = changes;
+  assertPlaybackTimestamp(lastPlayedAt);
+
+  return withLibraryDatabase(async (database) => {
+    const result = await database.runAsync(
+      `UPDATE books SET lastPlayedAt = ?, lastPlayedTrackId = ?
+       WHERE id = ? AND userId = ?
+         AND (? IS NULL OR EXISTS (
+           SELECT 1 FROM tracks WHERE id = ? AND bookId = books.id
+         ))`,
+      lastPlayedAt,
+      lastPlayedTrackId,
+      bookId,
+      userId,
+      lastPlayedTrackId,
+      lastPlayedTrackId,
+    );
+    return result.changes > 0;
+  });
+}
+
+/** Updates only this track's playback fields without changing the book or other tracks. */
+export async function updateTrack(
+  userId: string,
+  bookId: string,
+  trackId: string,
+  changes: TrackPlaybackUpdate,
+): Promise<boolean> {
+  const { positionSeconds, completed, lastPlayedAt, updatedAt } = changes;
+  if (!Number.isFinite(positionSeconds) || positionSeconds < 0) {
+    throw new RangeError(LIBRARY_ERROR_MESSAGES.invalidPlaybackPosition);
+  }
+  assertPlaybackTimestamp(lastPlayedAt);
+  assertPlaybackTimestamp(updatedAt);
+
+  return withLibraryDatabase(async (database) => {
+    const result = await database.runAsync(
+      `UPDATE tracks SET positionSeconds = ?, completed = ?, lastPlayedAt = ?, updatedAt = ?
+       WHERE id = ? AND bookId = ?
+         AND EXISTS (SELECT 1 FROM books WHERE id = tracks.bookId AND userId = ?)`,
+      positionSeconds,
+      completed ? 1 : 0,
+      lastPlayedAt,
+      updatedAt,
+      trackId,
+      bookId,
+      userId,
+    );
+    return result.changes > 0;
+  });
 }
 
 /** Deletes the database record and its tracks. Audio and covers are managed separately. */

@@ -100,6 +100,8 @@ export const LIBRARY_ERROR_MESSAGES = {
   invalidUserId: 'A valid user ID is required to save book files.',
   emptyBook: 'A book must contain at least one audio file.',
   bookUnavailable: 'The book is no longer available in the local library.',
+  invalidPlaybackPosition: 'Playback position must be a finite, non-negative number of seconds.',
+  invalidPlaybackTimestamp: 'Playback timestamps must be non-negative safe integers or null.',
   remoteCoverRequestFailed: (status: number) => `Open Library returned HTTP ${status}.`,
   trackDestinationExists: 'The generated audio file already exists.',
   saveAndCleanupFailed: 'Failed to save book files and clean up the new files.',

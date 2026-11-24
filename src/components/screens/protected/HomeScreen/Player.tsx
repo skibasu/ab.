@@ -1,6 +1,6 @@
-import { formatDuration } from '@/utils/format-duration';
 import { AUDIO_ERROR_MESSAGES } from '@/constants/errors';
 import { LOG_MESSAGES } from '@/constants/log-messages';
+import { formatDuration } from '@/utils/format-duration';
 import { Asset } from 'expo-asset';
 import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import { File } from 'expo-file-system';
