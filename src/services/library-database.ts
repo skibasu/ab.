@@ -4,7 +4,7 @@ import { DEFAULT_BOOK_COVER_PATH } from '@/constants/book-cover';
 import { LIBRARY_ERROR_MESSAGES } from '@/constants/errors';
 
 const DATABASE_NAME = 'library.db';
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 const ZIP_RECEIPTS_SCHEMA = `CREATE TABLE zip_import_receipts (
   userId TEXT NOT NULL,
   digest TEXT NOT NULL,
@@ -22,6 +22,12 @@ const PLAYBACK_SCHEMA = `
   ALTER TABLE tracks ADD COLUMN lastPlayedAt INTEGER;
   ALTER TABLE tracks ADD COLUMN updatedAt INTEGER;
   CREATE INDEX books_by_last_played ON books (userId, lastPlayedAt DESC);
+`;
+
+const BOOK_PROGRESS_SCHEMA = `
+  ALTER TABLE books ADD COLUMN percentProgress REAL NOT NULL DEFAULT 0
+    CHECK (percentProgress >= 0 AND percentProgress <= 100);
+  CREATE INDEX books_by_progress ON books (userId, percentProgress);
 `;
 
 let databasePromise: Promise<SQLiteDatabase> | undefined;
@@ -82,7 +88,7 @@ async function openLibraryDatabase(): Promise<SQLiteDatabase> {
           );
 
           ${ZIP_RECEIPTS_SCHEMA};
-          ${PLAYBACK_SCHEMA}
+          ${PLAYBACK_SCHEMA} ${BOOK_PROGRESS_SCHEMA}
           PRAGMA user_version = ${SCHEMA_VERSION};
         `);
       });
@@ -94,19 +100,29 @@ async function openLibraryDatabase(): Promise<SQLiteDatabase> {
           UPDATE books SET coverPath = previousCoverPath WHERE trim(previousCoverPath) <> '';
           ALTER TABLE books DROP COLUMN previousCoverPath;
           ${ZIP_RECEIPTS_SCHEMA};
-          ${PLAYBACK_SCHEMA}
+          ${PLAYBACK_SCHEMA} ${BOOK_PROGRESS_SCHEMA}
           PRAGMA user_version = ${SCHEMA_VERSION};
         `);
       });
     } else if (version.user_version === 2) {
       await database.withTransactionAsync(async () => {
         await database.execAsync(
-          `${ZIP_RECEIPTS_SCHEMA}; ${PLAYBACK_SCHEMA} PRAGMA user_version = ${SCHEMA_VERSION};`,
+          `${ZIP_RECEIPTS_SCHEMA}; ${PLAYBACK_SCHEMA} ${BOOK_PROGRESS_SCHEMA} PRAGMA user_version = ${SCHEMA_VERSION};`,
         );
       });
     } else if (version.user_version === 3) {
       await database.withTransactionAsync(async () => {
-        await database.execAsync(`${PLAYBACK_SCHEMA} PRAGMA user_version = ${SCHEMA_VERSION};`);
+        await database.execAsync(
+          `${PLAYBACK_SCHEMA} ${BOOK_PROGRESS_SCHEMA} PRAGMA user_version = ${SCHEMA_VERSION};`,
+        );
+      });
+    }
+
+    if (version.user_version === 4) {
+      await database.withTransactionAsync(async () => {
+        await database.execAsync(
+          `${BOOK_PROGRESS_SCHEMA} PRAGMA user_version = ${SCHEMA_VERSION};`,
+        );
       });
     }
 

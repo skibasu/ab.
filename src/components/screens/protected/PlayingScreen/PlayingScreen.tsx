@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import Actions from '@/components/ui/Actions/Actions';
 import BookCard from '@/components/ui/BookCard/BookCard';
@@ -10,19 +10,18 @@ import PlaybackPanel from '@/components/ui/PlaybackPanel/PlaybackPanel';
 import TrackList from '@/components/ui/TrackList/TrackList';
 import { LIBRARY_ERROR_MESSAGES } from '@/constants/errors';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useLibraryBook } from '@/hooks/use-library-book';
 import type { LibraryTrack } from '@/services/book-repository';
 import { useAuthStore } from '@/stores/auth-store';
-import { useLibraryStore } from '@/stores/library-store';
 import { styles } from './styles';
 
 type PlayingScreenProps = { bookId?: string };
 
 const PlayingScreen = ({ bookId }: PlayingScreenProps) => {
-  const localStyles = styles(useAppTheme());
+  const theme = useAppTheme();
+  const localStyles = styles(theme);
   const userId = useAuthStore((state) => state.user?.uid);
-  const book = useLibraryStore((state) =>
-    state.books.find((item) => item.id === bookId && item.userId === userId),
-  );
+  const { book, isLoading, failed } = useLibraryBook(userId, bookId);
   const [selection, setSelection] = useState<{ bookId: string; trackId: string }>();
   const selectedTrack =
     book?.tracks.find((track) => selection?.bookId === book.id && track.id === selection.trackId) ??
@@ -50,7 +49,16 @@ const PlayingScreen = ({ bookId }: PlayingScreenProps) => {
         </Text>
         <Actions iconList={['settings']} />
       </View>
-      {book ? (
+      {isLoading ? (
+        <View style={localStyles.container}>
+          <ActivityIndicator
+            accessibilityLabel="Loading audiobook"
+            accessibilityRole="progressbar"
+            color={theme.tintColor.primary}
+            size="large"
+          />
+        </View>
+      ) : book ? (
         <>
           <BookCard
             book={book}
@@ -71,8 +79,12 @@ const PlayingScreen = ({ bookId }: PlayingScreenProps) => {
         <View style={localStyles.container}>
           <InfoPanel
             icon="books"
-            title="Book unavailable"
-            message={LIBRARY_ERROR_MESSAGES.bookUnavailable}
+            title={failed ? 'Could not load audiobook' : 'Book unavailable'}
+            message={
+              failed
+                ? LIBRARY_ERROR_MESSAGES.bookLoadFailed
+                : LIBRARY_ERROR_MESSAGES.bookUnavailable
+            }
           />
         </View>
       )}

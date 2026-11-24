@@ -14,6 +14,7 @@ export const LOG_MESSAGES = {
   library: {
     initializationFailed: 'Failed to initialize the library:',
     booksLoadFailed: 'Failed to load books from the local library:',
+    bookLoadFailed: 'Failed to load an audiobook from the local library:',
     testResetFailed: 'Failed to clear the test library:',
   },
   bookImport: {

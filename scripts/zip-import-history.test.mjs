@@ -7,6 +7,7 @@ import test from 'node:test';
 const sourceRoot = new URL('../src/', import.meta.url);
 const storedFiles = new Map();
 let nextDatabase;
+const readQueries = [];
 function adapter(db) {
   return {
     async execAsync(sql) {
@@ -16,6 +17,7 @@ function adapter(db) {
       return db.prepare(sql).get(...params) ?? null;
     },
     async getAllAsync(sql, ...params) {
+      readQueries.push(sql);
       return db.prepare(sql).all(...params);
     },
     async runAsync(sql, ...params) {
@@ -38,6 +40,11 @@ function adapter(db) {
 }
 globalThis.__zipHistoryMocks = {
   openDatabaseAsync: async () => adapter(nextDatabase),
+  useAuthStore: {
+    getState: () => ({ user: { uid: 'account-a' } }),
+    subscribe: () => () => {},
+  },
+  enrichBookCover: async () => null,
   Paths: { document: '/documents' },
   File: class {
     constructor(base, path) {
@@ -56,7 +63,12 @@ globalThis.__zipHistoryMocks = {
 };
 registerHooks({
   resolve(specifier, context, nextResolve) {
-    const names = { 'expo-sqlite': 'openDatabaseAsync', 'expo-file-system': 'File,Paths' };
+    const names = {
+      'expo-sqlite': 'openDatabaseAsync',
+      'expo-file-system': 'File,Paths',
+      './auth-store': 'useAuthStore',
+      '@/services/book-cover-enrichment': 'enrichBookCover',
+    };
     if (names[specifier])
       return {
         shortCircuit: true,
@@ -72,7 +84,7 @@ registerHooks({
   },
 });
 
-for (const version of [0, 1, 2, 3]) {
+for (const version of [0, 1, 2, 3, 4, 5]) {
   await test(`schema ${version} migrates to playback schema without losing books or tracks`, async () => {
     const db = (nextDatabase = new DatabaseSync(':memory:'));
     if (version) {
@@ -84,18 +96,35 @@ for (const version of [0, 1, 2, 3]) {
         PRAGMA user_version = ${version};
       `);
     }
-    if (version === 3) {
+    if (version >= 3) {
       db.exec(`CREATE TABLE zip_import_receipts (
         userId TEXT NOT NULL, digest TEXT NOT NULL, zipBytes INTEGER NOT NULL,
         tracksJson TEXT NOT NULL, PRIMARY KEY (userId, digest)
       );
       INSERT INTO zip_import_receipts VALUES ('account-a', 'existing-digest', 100, '[]');`);
     }
+    if (version >= 4) {
+      db.exec(`
+        ALTER TABLE books ADD COLUMN lastPlayedAt INTEGER;
+        ALTER TABLE books ADD COLUMN lastPlayedTrackId TEXT;
+        ALTER TABLE tracks ADD COLUMN positionSeconds REAL NOT NULL DEFAULT 0 CHECK(positionSeconds >= 0);
+        ALTER TABLE tracks ADD COLUMN completed INTEGER NOT NULL DEFAULT 0 CHECK(completed IN (0, 1));
+        ALTER TABLE tracks ADD COLUMN lastPlayedAt INTEGER;
+        ALTER TABLE tracks ADD COLUMN updatedAt INTEGER;
+        CREATE INDEX books_by_last_played ON books(userId, lastPlayedAt DESC);
+        UPDATE tracks SET positionSeconds = 7, completed = 1;
+      `);
+    }
+    if (version === 5) {
+      db.exec(`ALTER TABLE books ADD COLUMN percentProgress REAL NOT NULL DEFAULT 0 CHECK(percentProgress >= 0 AND percentProgress <= 100);
+        CREATE INDEX books_by_progress ON books(userId, percentProgress);
+        UPDATE books SET percentProgress = 70;`);
+    }
     const { initializeLibraryDatabase } = await import(
       `../src/services/library-database.ts?migration=${version}`
     );
     await initializeLibraryDatabase();
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 4);
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 5);
     assert.equal(
       db.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE name = 'zip_import_receipts'").get()
         .n,
@@ -104,16 +133,19 @@ for (const version of [0, 1, 2, 3]) {
     if (version) {
       assert.equal(db.prepare('SELECT coverPath FROM books').get().coverPath, 'custom-cover.jpg');
       assert.equal(db.prepare('SELECT id FROM tracks').get().id, 'old-track');
-      const book = db.prepare('SELECT lastPlayedAt, lastPlayedTrackId FROM books').get();
+      const book = db
+        .prepare('SELECT lastPlayedAt, lastPlayedTrackId, percentProgress FROM books')
+        .get();
       assert.equal(book.lastPlayedAt, null);
       assert.equal(book.lastPlayedTrackId, null);
+      assert.equal(book.percentProgress, version === 5 ? 70 : 0);
       const track = db.prepare('SELECT * FROM tracks').get();
-      assert.equal(track.positionSeconds, 0);
-      assert.equal(track.completed, 0);
+      assert.equal(track.positionSeconds, version >= 4 ? 7 : 0);
+      assert.equal(track.completed, version >= 4 ? 1 : 0);
       assert.equal(track.lastPlayedAt, null);
       assert.equal(track.updatedAt, null);
     }
-    if (version === 3) {
+    if (version >= 3) {
       assert.equal(
         db.prepare('SELECT digest FROM zip_import_receipts').get().digest,
         'existing-digest',
@@ -122,6 +154,8 @@ for (const version of [0, 1, 2, 3]) {
     assert.ok(
       db.prepare("SELECT name FROM sqlite_master WHERE name = 'books_by_last_played'").get(),
     );
+    assert.ok(db.prepare("SELECT name FROM sqlite_master WHERE name = 'books_by_progress'").get());
+    await initializeLibraryDatabase();
     db.close();
   });
 }
@@ -295,15 +329,22 @@ test('updateBook updates playback fields and only accepts a track belonging to t
   const before = await getBook('account-a', 'book-a');
   assert.equal(
     await updateBook('account-a', 'book-a', {
+      percentProgress: 25,
       lastPlayedAt: 3000,
       lastPlayedTrackId: 'track-a',
     }),
     true,
   );
   const updated = await getBook('account-a', 'book-a');
-  assert.deepEqual(updated, { ...before, lastPlayedAt: 3000, lastPlayedTrackId: 'track-a' });
+  assert.deepEqual(updated, {
+    ...before,
+    lastPlayedAt: 3000,
+    lastPlayedTrackId: 'track-a',
+    percentProgress: 25,
+  });
   assert.equal(
     await updateBook('account-b', 'book-a', {
+      percentProgress: 50,
       lastPlayedAt: 4000,
       lastPlayedTrackId: 'track-a',
     }),
@@ -311,6 +352,7 @@ test('updateBook updates playback fields and only accepts a track belonging to t
   );
   assert.equal(
     await updateBook('account-a', 'missing-book', {
+      percentProgress: 50,
       lastPlayedAt: 4000,
       lastPlayedTrackId: null,
     }),
@@ -318,6 +360,7 @@ test('updateBook updates playback fields and only accepts a track belonging to t
   );
   assert.equal(
     await updateBook('account-a', 'book-a', {
+      percentProgress: 50,
       lastPlayedAt: 4000,
       lastPlayedTrackId: 'missing-track',
     }),
@@ -328,6 +371,7 @@ test('updateBook updates playback fields and only accepts a track belonging to t
     INSERT INTO tracks (id, bookId, title, filePath, position) VALUES ('other-track', 'other-book', 'Other', 'other.mp3', 0);`);
   assert.equal(
     await updateBook('account-a', 'book-a', {
+      percentProgress: 50,
       lastPlayedAt: 4000,
       lastPlayedTrackId: 'other-track',
     }),
@@ -336,6 +380,7 @@ test('updateBook updates playback fields and only accepts a track belonging to t
   assert.deepEqual(await getBook('account-a', 'book-a'), updated);
   assert.equal(
     await updateBook('account-a', 'book-a', {
+      percentProgress: 0,
       lastPlayedAt: null,
       lastPlayedTrackId: null,
     }),
@@ -385,4 +430,55 @@ test('playback updates reject invalid positions and timestamps without writing d
     }
   }
   assert.deepEqual(await getBook('account-a', 'book-a'), before);
+});
+
+test('library store fetches books without querying or retaining tracks', async () => {
+  prepare();
+  const { useLibraryStore } = await import('../src/stores/library-store.ts');
+  readQueries.length = 0;
+  await useLibraryStore.getState().fetchBooks('account-a');
+  const books = useLibraryStore.getState().books;
+  assert.equal(books.length, 1);
+  assert.equal('tracks' in books[0], false);
+  assert.equal(books[0].percentProgress, 0);
+  assert.equal(readQueries.length, 1);
+  assert.doesNotMatch(readQueries[0], /tracks/i);
+  const book = await getBook('account-a', 'book-a');
+  assert.equal(book.tracks.length, 1);
+});
+
+test('book progress supports fractions, filters completed books and rejects invalid percentages', async () => {
+  prepare();
+  const changes = { lastPlayedAt: 3000, lastPlayedTrackId: 'track-a', percentProgress: 42.5 };
+  assert.equal(await updateBook('account-a', 'book-a', changes), true);
+  assert.equal((await listBooks('account-a'))[0].percentProgress, 42.5);
+  assert.equal((await getBook('account-a', 'book-a')).percentProgress, 42.5);
+  assert.equal(
+    db
+      .prepare('SELECT COUNT(*) AS n FROM books WHERE userId = ? AND percentProgress < 100')
+      .get('account-a').n,
+    1,
+  );
+  await updateBook('account-a', 'book-a', { ...changes, percentProgress: 100 });
+  assert.equal(
+    db
+      .prepare('SELECT COUNT(*) AS n FROM books WHERE userId = ? AND percentProgress < 100')
+      .get('account-a').n,
+    0,
+  );
+  assert.equal(
+    db
+      .prepare('SELECT COUNT(*) AS n FROM books WHERE userId = ? AND percentProgress < 100')
+      .get('account-b').n,
+    0,
+  );
+  for (const percentProgress of [-1, 101, NaN, Infinity]) {
+    await assert.rejects(
+      updateBook('account-a', 'book-a', { ...changes, percentProgress }),
+      RangeError,
+    );
+  }
+  assert.equal((await listBooks('account-a'))[0].percentProgress, 100);
+  assert.throws(() => db.exec('UPDATE books SET percentProgress = -1'), /CHECK constraint failed/);
+  assert.throws(() => db.exec('UPDATE books SET percentProgress = 101'), /CHECK constraint failed/);
 });

@@ -2,12 +2,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import type { TrackPlaybackUpdate } from '@/services/book-repository';
+import type { LibraryBook, TrackPlaybackUpdate } from '@/services/book-repository';
 
 export type PlaybackCheckpoint = TrackPlaybackUpdate & {
   userId: string;
   bookId: string;
   trackId: string;
+  percentProgress: LibraryBook['percentProgress'];
+};
+
+type PreviousCheckpoint = Omit<PlaybackCheckpoint, 'percentProgress'> & {
+  percentProgress?: number;
 };
 
 type PlaybackProgressState = {
@@ -45,9 +50,20 @@ export const usePlaybackProgressStore = create<PlaybackProgressState>()(
     }),
     {
       name: 'ab-playback-progress',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => AsyncStorage),
       partialize: ({ checkpoints }) => ({ checkpoints }),
+      migrate: (persistedState) => {
+        const previous = persistedState as { checkpoints?: Record<string, PreviousCheckpoint> };
+        return {
+          checkpoints: Object.fromEntries(
+            Object.entries(previous.checkpoints ?? {}).map(([key, checkpoint]) => [
+              key,
+              { ...checkpoint, percentProgress: checkpoint.percentProgress ?? 0 },
+            ]),
+          ),
+        };
+      },
     },
   ),
 );

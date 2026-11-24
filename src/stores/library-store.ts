@@ -3,11 +3,11 @@ import { create } from 'zustand';
 import { DEFAULT_BOOK_COVER_PATH } from '@/constants/book-cover';
 import { LOG_MESSAGES } from '@/constants/log-messages';
 import { enrichBookCover } from '@/services/book-cover-enrichment';
-import { deleteBook, getBooks, type LibraryBookWithTracks } from '@/services/book-repository';
+import { deleteBook, listBooks, type LibraryBook } from '@/services/book-repository';
 import { useAuthStore } from './auth-store';
 
 type LibraryState = {
-  books: LibraryBookWithTracks[];
+  books: LibraryBook[];
   fetchBooks: (userId: string) => Promise<void>;
   fetchMissingCovers: (userId: string) => void;
   removeBook: (userId: string, bookId: string) => Promise<boolean>;
@@ -23,7 +23,7 @@ export const useLibraryStore = create<LibraryState>()((set, get) => ({
 
     const request = ++latestRequest;
     try {
-      const books = await getBooks(userId);
+      const books = await listBooks(userId);
       if (request === latestRequest) set({ books });
     } catch (error) {
       if (request === latestRequest) console.error(LOG_MESSAGES.library.booksLoadFailed, error);

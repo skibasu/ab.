@@ -14,6 +14,7 @@ export type LibraryBook = {
   createdAt: number;
   lastPlayedAt: number | null;
   lastPlayedTrackId: string | null;
+  percentProgress: number;
 };
 
 export type LibraryTrack = {
@@ -30,7 +31,10 @@ export type LibraryTrack = {
 
 export type LibraryBookWithTracks = LibraryBook & { tracks: LibraryTrack[] };
 
-export type BookPlaybackUpdate = Pick<LibraryBook, 'lastPlayedAt' | 'lastPlayedTrackId'>;
+export type BookPlaybackUpdate = Pick<
+  LibraryBook,
+  'lastPlayedAt' | 'lastPlayedTrackId' | 'percentProgress'
+>;
 export type TrackPlaybackUpdate = Pick<
   LibraryTrack,
   'positionSeconds' | 'completed' | 'lastPlayedAt' | 'updatedAt'
@@ -221,18 +225,22 @@ export async function updateBook(
   bookId: string,
   changes: BookPlaybackUpdate,
 ): Promise<boolean> {
-  const { lastPlayedAt, lastPlayedTrackId } = changes;
+  const { lastPlayedAt, lastPlayedTrackId, percentProgress } = changes;
   assertPlaybackTimestamp(lastPlayedAt);
+  if (!Number.isFinite(percentProgress) || percentProgress < 0 || percentProgress > 100) {
+    throw new RangeError(LIBRARY_ERROR_MESSAGES.invalidBookProgress);
+  }
 
   return withLibraryDatabase(async (database) => {
     const result = await database.runAsync(
-      `UPDATE books SET lastPlayedAt = ?, lastPlayedTrackId = ?
+      `UPDATE books SET lastPlayedAt = ?, lastPlayedTrackId = ?, percentProgress = ?
        WHERE id = ? AND userId = ?
          AND (? IS NULL OR EXISTS (
            SELECT 1 FROM tracks WHERE id = ? AND bookId = books.id
          ))`,
       lastPlayedAt,
       lastPlayedTrackId,
+      percentProgress,
       bookId,
       userId,
       lastPlayedTrackId,
