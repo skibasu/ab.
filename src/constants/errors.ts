@@ -67,6 +67,7 @@ export const STARTUP_ERROR_MESSAGE = 'Could not start the app. Reopen it and try
 
 export const TECHNICAL_ERROR_MESSAGES = {
   formProviderMissing: 'useFormContext must be used within a FormProvider',
+  playbackProviderMissing: 'usePlaybackContext must be used within a PlaybackProvider.',
   emailNotVerified: 'Firebase user email is not verified.',
   googleSignInBuildRequired: 'Google Sign-In is unavailable in Expo Go.',
   googleSignInNotConfigured: 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is missing.',

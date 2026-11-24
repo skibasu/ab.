@@ -3,7 +3,12 @@ import { create } from 'zustand';
 import { DEFAULT_BOOK_COVER_PATH } from '@/constants/book-cover';
 import { LOG_MESSAGES } from '@/constants/log-messages';
 import { enrichBookCover } from '@/services/book-cover-enrichment';
-import { deleteBook, listBooks, type LibraryBook } from '@/services/book-repository';
+import {
+  deleteBook,
+  listBooks,
+  type LibraryBook,
+  type SavedPlaybackProgress,
+} from '@/services/book-repository';
 import { useAuthStore } from './auth-store';
 
 type LibraryState = {
@@ -11,6 +16,7 @@ type LibraryState = {
   fetchBooks: (userId: string) => Promise<void>;
   fetchMissingCovers: (userId: string) => void;
   removeBook: (userId: string, bookId: string) => Promise<boolean>;
+  applyPlaybackProgress: (progress: SavedPlaybackProgress) => void;
 };
 
 let latestRequest = 0;
@@ -18,6 +24,23 @@ const attemptedCoverLookups = new Set<string>();
 
 export const useLibraryStore = create<LibraryState>()((set, get) => ({
   books: [],
+  applyPlaybackProgress: (progress) => {
+    if (useAuthStore.getState().user?.uid !== progress.userId) return;
+    // Invalidate a pending library read so it cannot restore pre-save progress.
+    latestRequest++;
+    set(({ books }) => ({
+      books: books.map((book) =>
+        book.id === progress.bookId && book.userId === progress.userId
+          ? {
+              ...book,
+              lastPlayedAt: progress.lastPlayedAt,
+              lastPlayedTrackId: progress.trackId,
+              percentProgress: progress.percentProgress,
+            }
+          : book,
+      ),
+    }));
+  },
   fetchBooks: async (userId) => {
     if (useAuthStore.getState().user?.uid !== userId) return;
 

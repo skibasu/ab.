@@ -40,6 +40,16 @@ export type TrackPlaybackUpdate = Pick<
   'positionSeconds' | 'completed' | 'lastPlayedAt' | 'updatedAt'
 >;
 
+export type PlaybackProgressInput = TrackPlaybackUpdate & {
+  userId: string;
+  bookId: string;
+  trackId: string;
+};
+
+export type SavedPlaybackProgress = PlaybackProgressInput & {
+  percentProgress: number;
+};
+
 type LibraryTrackRow = Omit<LibraryTrack, 'completed'> & { completed: 0 | 1 };
 
 const toLibraryTrack = (row: LibraryTrackRow): LibraryTrack => ({
@@ -217,6 +227,69 @@ function assertPlaybackTimestamp(value: number | null): void {
   if (value !== null && (!Number.isSafeInteger(value) || value < 0)) {
     throw new RangeError(LIBRARY_ERROR_MESSAGES.invalidPlaybackTimestamp);
   }
+}
+
+/** Commits the track and book together; the percentage is calculated from persisted track state. */
+export async function savePlaybackProgress(
+  progress: PlaybackProgressInput,
+  assertActive?: () => void,
+): Promise<SavedPlaybackProgress | null> {
+  const { userId, bookId, trackId, positionSeconds, lastPlayedAt, updatedAt } = progress;
+  if (!Number.isFinite(positionSeconds) || positionSeconds < 0) {
+    throw new RangeError(LIBRARY_ERROR_MESSAGES.invalidPlaybackPosition);
+  }
+  assertPlaybackTimestamp(lastPlayedAt);
+  assertPlaybackTimestamp(updatedAt);
+
+  return withLibraryDatabase(async (database) => {
+    let saved: SavedPlaybackProgress | null = null;
+    await database.withTransactionAsync(async () => {
+      assertActive?.();
+      const track = await database.getFirstAsync<LibraryTrackRow>(
+        `SELECT tracks.* FROM tracks JOIN books ON books.id = tracks.bookId
+         WHERE tracks.id = ? AND tracks.bookId = ? AND books.userId = ?`,
+        trackId,
+        bookId,
+        userId,
+      );
+      if (!track) return;
+      // A replay does not clear an already completed track.
+      const completed = track.completed === 1 || progress.completed;
+      const position =
+        track.duration !== null && track.duration > 0
+          ? Math.min(positionSeconds, track.duration)
+          : positionSeconds;
+      await database.runAsync(
+        'UPDATE tracks SET positionSeconds = ?, completed = ?, lastPlayedAt = ?, updatedAt = ? WHERE id = ?',
+        position,
+        completed ? 1 : 0,
+        lastPlayedAt,
+        updatedAt,
+        trackId,
+      );
+      const totals = await database.getFirstAsync<{ percentProgress: number }>(
+        `SELECT CASE WHEN COUNT(duration) = COUNT(*) AND SUM(duration) > 0 THEN
+          100.0 * SUM(CASE WHEN completed = 1 THEN duration
+            ELSE MIN(positionSeconds, duration) END) / SUM(duration)
+         ELSE 100.0 * AVG(CASE WHEN completed = 1 THEN 1.0
+            WHEN duration > 0 THEN MIN(positionSeconds / duration, 1.0) ELSE 0.0 END)
+         END AS percentProgress FROM tracks WHERE bookId = ?`,
+        bookId,
+      );
+      const percentProgress = Math.min(100, Math.max(0, totals?.percentProgress ?? 0));
+      await database.runAsync(
+        'UPDATE books SET lastPlayedAt = ?, lastPlayedTrackId = ?, percentProgress = ? WHERE id = ? AND userId = ?',
+        lastPlayedAt,
+        trackId,
+        percentProgress,
+        bookId,
+        userId,
+      );
+      assertActive?.();
+      saved = { ...progress, completed, positionSeconds: position, percentProgress };
+    });
+    return saved;
+  });
 }
 
 /** Updates only playback fields. The selected track must belong to this user's book. */

@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
 import Actions from '@/components/ui/Actions/Actions';
@@ -9,10 +9,8 @@ import InfoPanel from '@/components/ui/InfoPanel/InfoPanel';
 import PlaybackPanel from '@/components/ui/PlaybackPanel/PlaybackPanel';
 import TrackList from '@/components/ui/TrackList/TrackList';
 import { LIBRARY_ERROR_MESSAGES } from '@/constants/errors';
+import { usePlaybackContext } from '@/context/PlaybackContext';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { useLibraryBook } from '@/hooks/use-library-book';
-import type { LibraryTrack } from '@/services/book-repository';
-import { useAuthStore } from '@/stores/auth-store';
 import { styles } from './styles';
 
 type PlayingScreenProps = { bookId?: string };
@@ -20,17 +18,19 @@ type PlayingScreenProps = { bookId?: string };
 const PlayingScreen = ({ bookId }: PlayingScreenProps) => {
   const theme = useAppTheme();
   const localStyles = styles(theme);
-  const userId = useAuthStore((state) => state.user?.uid);
-  const { book, isLoading, failed } = useLibraryBook(userId, bookId);
-  const [selection, setSelection] = useState<{ bookId: string; trackId: string }>();
-  const selectedTrack =
-    book?.tracks.find((track) => selection?.bookId === book.id && track.id === selection.trackId) ??
-    book?.tracks[0];
-  const selectTrack = useCallback(
-    (track: LibraryTrack) => {
-      if (bookId) setSelection({ bookId, trackId: track.id });
-    },
-    [bookId],
+  const context = usePlaybackContext();
+  const { openBook, playback } = context;
+  const matches = context.bookId === bookId;
+  const book = matches ? context.book : null;
+  const isLoading = Boolean(bookId && (!matches || context.isLoading));
+  const failed = matches && context.failed;
+  const selectedTrack = playback.track;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (bookId) openBook(bookId);
+      // Leaving this screen only removes its UI; the provider retains playback.
+    }, [bookId, openBook]),
   );
 
   return (
@@ -67,11 +67,14 @@ const PlayingScreen = ({ bookId }: PlayingScreenProps) => {
           <TrackList
             tracks={book.tracks}
             selectedTrackId={selectedTrack?.id}
-            onTrackPress={selectTrack}
+            onTrackPress={playback.selectTrack}
           />
           {selectedTrack && (
             <View style={localStyles.player}>
-              <PlaybackPanel track={selectedTrack} />
+              <PlaybackPanel
+                track={selectedTrack}
+                playback={playback}
+              />
             </View>
           )}
         </>

@@ -71,7 +71,7 @@
     "test:dev": "node --test scripts/dev.test.mjs",
     "test:audio": "node --test scripts/audio-file-tokenizer.test.mjs",
     "test:import": "node --test scripts/book-import.test.mjs",
-    "test:playback": "node --test scripts/playback-progress-store.test.mjs",
+    "test:playback": "node --test scripts/playback-progress-store.test.mjs scripts/playback-session.test.mjs",
     "test:zip": "node --test scripts/zip-import.test.mjs scripts/book-import-session.test.mjs scripts/zip-native.test.mjs scripts/zip-import-history.test.mjs scripts/new-book-files.test.mjs scripts/book-import-previews.test.mjs scripts/import-error.test.mjs",
     "check": "npm run typecheck && npm run lint && npm run format:check"
   },

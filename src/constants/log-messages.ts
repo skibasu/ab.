@@ -38,6 +38,8 @@ export const LOG_MESSAGES = {
     emptyBookSkipped: 'Skipped a book because no audio files could be saved:',
   },
   audio: {
+    progressSaveFailed: 'Failed to save playback progress:',
+    playbackFailed: 'Could not prepare or control audiobook playback:',
     metadataRead: (filename: string) => `[${filename}] Metadata:`,
     metadataReadFailed: (filename: string) => `[${filename}] Failed to read metadata:`,
   },

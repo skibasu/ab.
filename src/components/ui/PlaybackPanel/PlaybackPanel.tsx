@@ -1,10 +1,9 @@
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import { File, Paths } from 'expo-file-system';
+import { useAudioPlayerStatus } from 'expo-audio';
 import { View } from 'react-native';
 
 import { useAppTheme } from '@/hooks/use-app-theme';
+import type { BookPlayback } from '@/hooks/use-book-playback';
 import type { LibraryTrack } from '@/services/book-repository';
-import { useEffect } from 'react';
 import BackButton from './BackButton/BackButton';
 import NextButton from './NextButton/NextButton';
 import PlayButton from './PlayButton/PlayButton';
@@ -17,21 +16,14 @@ import { styles } from './styles';
 
 type PlaybackPanelProps = {
   track: LibraryTrack;
+  playback: BookPlayback;
 };
 
-const PlaybackPanel = ({ track }: PlaybackPanelProps) => {
-  const audioSource = {
-    uri: new File(Paths.document, track.filePath).uri,
-  };
-  const player = useAudioPlayer(audioSource);
-  const status = useAudioPlayerStatus(player);
-
-  const togglePlay = () => (player.playing ? player.pause() : player.play());
-  const next = async () => await player.seekTo(Math.min(player.duration, player.currentTime + 15));
-  const back = async () => await player.seekTo(Math.max(0, player.currentTime - 15));
-
-  useEffect(() => {}, [status.currentTime]);
-
+const PlaybackPanel = ({ track, playback }: PlaybackPanelProps) => {
+  const { ready } = playback;
+  const status = useAudioPlayerStatus(playback.player);
+  const currentTime = ready ? status.currentTime : 0;
+  const duration = ready && status.duration > 0 ? status.duration : track.duration;
   const theme = useAppTheme();
   const localStyles = styles(theme);
 
@@ -41,18 +33,25 @@ const PlaybackPanel = ({ track }: PlaybackPanelProps) => {
         position={track.position}
         title={track.title}
       />
-      <PlayProgressBar progress={0} />
+      <PlayProgressBar progress={duration && duration > 0 ? (currentTime / duration) * 100 : 0} />
       <PlayTimes
-        currentTime={status.currentTime}
-        duration={track.duration}
+        currentTime={currentTime}
+        duration={duration}
       />
       <View style={localStyles.controls}>
-        <BackButton onPress={back} />
+        <BackButton
+          onPress={playback.back}
+          disabled={!ready}
+        />
         <PlayButton
           playing={status.playing}
-          onPress={togglePlay}
+          onPress={playback.togglePlay}
+          disabled={!ready}
         />
-        <NextButton onPress={next} />
+        <NextButton
+          onPress={playback.next}
+          disabled={!ready}
+        />
       </View>
       <View style={localStyles.options}>
         <PlaySpeed speed={1} />

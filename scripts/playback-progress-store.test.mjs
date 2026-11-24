@@ -1,46 +1,46 @@
 import assert from 'node:assert/strict';
-import { registerHooks } from 'node:module';
 import test from 'node:test';
+import { registerHooks } from 'node:module';
+import { existsSync } from 'node:fs';
 
-const storageKey = 'ab-playback-progress';
-const checkpointKey = (userId, trackId) => JSON.stringify([userId, trackId]);
-const previousCheckpoint = {
-  userId: 'account-a',
-  bookId: 'book-a',
-  trackId: 'track-a',
-  positionSeconds: 125.5,
-  completed: false,
-  lastPlayedAt: 1000,
-  updatedAt: 1100,
+const sourceRoot = new URL('../src/', import.meta.url);
+let userId = 'account-a';
+const listeners = new Set();
+const applied = [];
+let persistProgress = async (snapshot, assertActive) => {
+  assertActive();
+  return { ...snapshot, percentProgress: 42.5 };
 };
-const stored = new Map([
-  [
-    storageKey,
-    JSON.stringify({
-      version: 1,
-      state: { checkpoints: { [checkpointKey('account-a', 'track-a')]: previousCheckpoint } },
-    }),
-  ],
-]);
-
-globalThis.__playbackStorageMock = {
-  async getItem(key) {
-    return stored.get(key) ?? null;
+globalThis.__progressMocks = {
+  savePlaybackProgress: (...args) => persistProgress(...args),
+  useAuthStore: {
+    getState: () => ({ user: { uid: userId } }),
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
   },
-  async setItem(key, value) {
-    stored.set(key, value);
-  },
-  async removeItem(key) {
-    stored.delete(key);
+  useLibraryStore: {
+    getState: () => ({ applyPlaybackProgress: (progress) => applied.push(progress) }),
   },
 };
 registerHooks({
   resolve(specifier, context, nextResolve) {
-    if (specifier === '@react-native-async-storage/async-storage') {
+    const mocks = {
+      '@/services/book-repository': 'savePlaybackProgress',
+      './auth-store': 'useAuthStore',
+      './library-store': 'useLibraryStore',
+    };
+    if (mocks[specifier])
       return {
         shortCircuit: true,
-        url: 'data:text/javascript,export default globalThis.__playbackStorageMock;',
+        url: `data:text/javascript,${encodeURIComponent(`export const {${mocks[specifier]}}=globalThis.__progressMocks;`)}`,
       };
+    if (specifier.startsWith('@/'))
+      return nextResolve(new URL(`${specifier.slice(2)}.ts`, sourceRoot).href, context);
+    if (specifier.startsWith('.') && context.parentURL?.startsWith(sourceRoot.href)) {
+      const target = new URL(`${specifier}.ts`, context.parentURL);
+      if (existsSync(target)) return nextResolve(target.href, context);
     }
     return nextResolve(specifier, context);
   },
@@ -49,36 +49,98 @@ registerHooks({
 const { usePlaybackProgressStore: store } =
   await import('../src/stores/playback-progress-store.ts');
 
-test('version 1 checkpoints gain book progress without losing the saved track position', async () => {
-  await store.persist.rehydrate();
-  assert.equal(store.persist.hasHydrated(), true);
-  assert.deepEqual(store.getState().getCheckpoint('account-a', 'track-a'), {
-    ...previousCheckpoint,
-    percentProgress: 0,
-  });
-  assert.equal(JSON.parse(stored.get(storageKey)).version, 2);
+const checkpoint = {
+  userId: 'account-a',
+  bookId: 'book-a',
+  trackId: 'track-a',
+  positionSeconds: 125.5,
+  completed: false,
+  lastPlayedAt: 1000,
+  updatedAt: 1100,
+  percentProgress: 42.5,
+};
+
+test('in-memory progress remains isolated by user and track', () => {
+  const second = { ...checkpoint, userId: 'account-b', percentProgress: 80 };
+  const anotherTrack = { ...checkpoint, trackId: 'track-b', positionSeconds: 15 };
+  store.getState().setCheckpoint(checkpoint);
+  store.getState().setCheckpoint(second);
+  store.getState().setCheckpoint(anotherTrack);
+  assert.deepEqual(store.getState().getCheckpoint('account-a', 'track-a'), checkpoint);
+  assert.deepEqual(store.getState().getCheckpoint('account-b', 'track-a'), second);
+  assert.deepEqual(store.getState().getCheckpoint('account-a', 'track-b'), anotherTrack);
+
+  store.getState().removeCheckpoint('account-a', 'track-a');
+  assert.equal(store.getState().getCheckpoint('account-a', 'track-a'), undefined);
+  assert.deepEqual(store.getState().getCheckpoint('account-b', 'track-a'), second);
+  assert.deepEqual(store.getState().getCheckpoint('account-a', 'track-b'), anotherTrack);
 });
 
-test('book percentage persists, survives reload and remains isolated by user and track', async () => {
-  const first = { ...previousCheckpoint, percentProgress: 42.5 };
-  const second = { ...first, userId: 'account-b', percentProgress: 80 };
-  store.getState().setCheckpoint(first);
-  store.getState().setCheckpoint(second);
-  const saved = JSON.parse(stored.get(storageKey));
-  assert.deepEqual(Object.keys(saved.state), ['checkpoints']);
-  assert.deepEqual(saved.state.checkpoints[checkpointKey('account-a', 'track-a')], first);
-  assert.deepEqual(saved.state.checkpoints[checkpointKey('account-b', 'track-a')], second);
+test('a fresh store starts empty instead of restoring playback progress from storage', async () => {
+  store.getState().setCheckpoint(checkpoint);
+  const { usePlaybackProgressStore: fresh } =
+    await import('../src/stores/playback-progress-store.ts?fresh');
+  assert.deepEqual(fresh.getState().checkpoints, {});
+  assert.equal(fresh.getState().getCheckpoint('account-a', 'track-a'), undefined);
+  assert.equal('persist' in fresh, false);
+});
 
-  const { usePlaybackProgressStore: restored } =
-    await import('../src/stores/playback-progress-store.ts?reload');
-  await restored.persist.rehydrate();
-  assert.deepEqual(restored.getState().getCheckpoint('account-a', 'track-a'), first);
-  assert.deepEqual(restored.getState().getCheckpoint('account-b', 'track-a'), second);
-  restored.getState().removeCheckpoint('account-a', 'track-a');
-  assert.equal(restored.getState().getCheckpoint('account-a', 'track-a'), undefined);
-  assert.deepEqual(restored.getState().getCheckpoint('account-b', 'track-a'), second);
-  assert.equal(
-    JSON.parse(stored.get(storageKey)).state.checkpoints[checkpointKey('account-a', 'track-a')],
-    undefined,
-  );
+test('progress writes are serialized and Zustand changes only after the database succeeds', async () => {
+  store.setState({ checkpoints: {} });
+  applied.length = 0;
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  const positions = [];
+  persistProgress = async (snapshot, assertActive) => {
+    positions.push(snapshot.positionSeconds);
+    if (positions.length === 1) await gate;
+    assertActive();
+    return { ...snapshot, percentProgress: snapshot.positionSeconds };
+  };
+  const first = store.getState().saveProgress({ ...checkpoint, positionSeconds: 15 });
+  const second = store.getState().saveProgress({ ...checkpoint, positionSeconds: 30 });
+  await Promise.resolve();
+  assert.deepEqual(positions, [15]);
+  assert.equal(store.getState().getCheckpoint('account-a', 'track-a'), undefined);
+  assert.equal(applied.length, 0);
+  release();
+  assert.equal(await first, true);
+  assert.equal(await second, true);
+  assert.deepEqual(positions, [15, 30]);
+  assert.equal(store.getState().getCheckpoint('account-a', 'track-a').positionSeconds, 30);
+  assert.equal(applied.at(-1).percentProgress, 30);
+});
+
+test('database failures leave the last successful Zustand snapshot unchanged', async (t) => {
+  t.mock.method(console, 'warn', () => {});
+  const before = store.getState().getCheckpoint('account-a', 'track-a');
+  persistProgress = async () => {
+    throw new Error('Simulated database failure');
+  };
+  assert.equal(await store.getState().saveProgress({ ...checkpoint, positionSeconds: 90 }), false);
+  assert.deepEqual(store.getState().getCheckpoint('account-a', 'track-a'), before);
+});
+
+test('account changes invalidate queued and in-flight saves and clear transient progress', async () => {
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  persistProgress = async (snapshot, assertActive) => {
+    await gate;
+    assertActive();
+    return snapshot;
+  };
+  const pending = store.getState().saveProgress(checkpoint);
+  const queued = store.getState().saveProgress({ ...checkpoint, positionSeconds: 90 });
+  await Promise.resolve();
+  userId = 'account-b';
+  for (const listener of listeners)
+    listener({ user: { uid: 'account-b' } }, { user: { uid: 'account-a' } });
+  release();
+  assert.equal(await pending, false);
+  assert.equal(await queued, false);
+  assert.deepEqual(store.getState().checkpoints, {});
 });

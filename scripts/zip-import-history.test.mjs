@@ -482,3 +482,86 @@ test('book progress supports fractions, filters completed books and rejects inva
   assert.throws(() => db.exec('UPDATE books SET percentProgress = -1'), /CHECK constraint failed/);
   assert.throws(() => db.exec('UPDATE books SET percentProgress = 101'), /CHECK constraint failed/);
 });
+
+const { savePlaybackProgress } = await import('../src/services/book-repository.ts');
+
+test('playback transaction updates the track and book percentage from all saved tracks', async () => {
+  prepare();
+  db.exec(`INSERT INTO tracks (id, bookId, title, filePath, duration, position)
+    VALUES ('track-b', 'book-a', 'Part 2', 'part2.mp3', 30, 1)`);
+  const input = {
+    userId: 'account-a',
+    bookId: 'book-a',
+    trackId: 'track-a',
+    positionSeconds: 5,
+    completed: false,
+    lastPlayedAt: 1000,
+    updatedAt: 1000,
+  };
+  const first = await savePlaybackProgress(input);
+  assert.equal(first.percentProgress, 12.5);
+  let book = await getBook('account-a', 'book-a');
+  assert.equal(book.percentProgress, 12.5);
+  assert.equal(book.lastPlayedTrackId, 'track-a');
+  assert.equal(book.tracks[0].positionSeconds, 5);
+  const completed = await savePlaybackProgress({ ...input, completed: true });
+  assert.equal(completed.percentProgress, 25);
+  const second = await savePlaybackProgress({ ...input, trackId: 'track-b', positionSeconds: 15 });
+  assert.equal(second.percentProgress, 62.5);
+  await savePlaybackProgress({
+    ...input,
+    trackId: 'track-b',
+    positionSeconds: 30,
+    completed: true,
+  });
+  const replay = await savePlaybackProgress({ ...input, positionSeconds: 1, completed: false });
+  assert.equal(replay.completed, true);
+  assert.equal(replay.percentProgress, 100);
+  book = await getBook('account-a', 'book-a');
+  assert.equal(book.tracks[0].completed, true);
+  assert.equal(await savePlaybackProgress({ ...input, userId: 'account-b' }), null);
+  assert.equal(await savePlaybackProgress({ ...input, bookId: 'missing' }), null);
+});
+
+test('playback transaction rolls back both track and book if the account changes during writes', async () => {
+  prepare();
+  const before = await getBook('account-a', 'book-a');
+  let calls = 0;
+  await assert.rejects(
+    savePlaybackProgress(
+      {
+        userId: 'account-a',
+        bookId: 'book-a',
+        trackId: 'track-a',
+        positionSeconds: 8,
+        completed: true,
+        lastPlayedAt: 1000,
+        updatedAt: 1000,
+      },
+      () => {
+        if (++calls === 2) throw new Error('account changed');
+      },
+    ),
+    /account changed/,
+  );
+  assert.deepEqual(await getBook('account-a', 'book-a'), before);
+});
+
+test('book progress handles unknown durations and clamps the saved track position', async () => {
+  prepare();
+  const input = {
+    userId: 'account-a',
+    bookId: 'book-a',
+    trackId: 'track-a',
+    positionSeconds: 100,
+    completed: false,
+    lastPlayedAt: 1000,
+    updatedAt: 1000,
+  };
+  assert.equal((await savePlaybackProgress(input)).positionSeconds, 10);
+  db.exec(`UPDATE tracks SET duration = NULL;
+    INSERT INTO tracks (id, bookId, title, filePath, duration, position)
+    VALUES ('track-b', 'book-a', 'Part 2', 'part2.mp3', NULL, 1)`);
+  const saved = await savePlaybackProgress({ ...input, completed: true });
+  assert.equal(saved.percentProgress, 50);
+});
